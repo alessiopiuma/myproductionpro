@@ -148,6 +148,25 @@ aside {
   background: var(--surface2); padding: 0.12rem 0.55rem;
   border-radius: 5px; border: 1px solid var(--border);
 }
+/* ── MONTH GROUP PROMINENT ── */
+.month-group {
+  margin-bottom: 2.2rem;
+}
+.month-heading {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.6rem 0; margin-bottom: 0.8rem;
+  border-bottom: 2px solid var(--border2);
+  position: relative;
+}
+.month-heading::before {
+  content: ''; position: absolute; left: 0; bottom: -2px;
+  width: 40px; height: 2px; background: var(--calendar);
+}
+.month-heading-name {
+  font-size: 1rem; font-weight: 800; color: var(--white);
+  letter-spacing: -0.01em;
+}
+.month-heading-spacer { flex: 1; }
 .month-heading-spacer { flex: 1; }
 
 /* ── DATE ROW (show section) ── */
@@ -601,11 +620,11 @@ a.list-cell-venue:hover { color: var(--white); }
 /* ── BOTTOM NAV (mobile only) ── */
 .bottom-nav {
   display: none;
-  position: fixed; top: 0; left: 0; right: 0; z-index: 300;
-  background: var(--surface); border-bottom: 1px solid var(--border);
-  padding: calc(env(safe-area-inset-top) + 0.3rem) 0 0.3rem;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+  background: var(--surface); border-top: 2px solid var(--border2);
+  padding: 0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom));
   overflow-x: auto; -webkit-overflow-scrolling: touch;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
 }
 .bottom-nav::-webkit-scrollbar { display:none; }
 .bottom-nav-inner {
@@ -614,25 +633,27 @@ a.list-cell-venue:hover { color: var(--white); }
 }
 .bn-item {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 0.2rem; padding: 0.35rem 0.7rem; border-radius: 8px;
-  cursor: pointer; min-width: 54px; transition: background 0.15s;
+  gap: 0.3rem; padding: 0.5rem 0.8rem; border-radius: 8px;
+  cursor: pointer; min-width: 60px; transition: background 0.15s;
   border: none; background: none; color: var(--dimtext);
   -webkit-tap-highlight-color: transparent;
 }
 .bn-item.active { color: var(--white); background: var(--surface2); }
 .bn-item:active { background: var(--surface3); }
-.bn-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.bn-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
 .bn-label { font-family:'JetBrains Mono',monospace; font-size: 0.5rem; letter-spacing:0.05em; white-space:nowrap; }
 
 @media (max-width: 768px) {
   /* Hide sidebar, show top nav */
   aside { display: none !important; }
   .bottom-nav { display: flex; }
-  header { display: none !important; }
+  header { display: flex !important; padding: 1rem 1rem 0.8rem !important; }
+  /* Content padding: above bottom nav */
+  .content { padding-bottom: 72px !important; }
   
   /* Layout adjustments */
   .layout { grid-template-columns: 1fr !important; }
-  .content { padding: 4.2rem 0.8rem 1.5rem !important; }
+  .content { padding: 1rem 0.8rem 5.5rem !important; }
   
   /* Header */
   header { padding: 0.9rem 1rem 0.8rem !important; gap: 0.5rem !important; }
@@ -728,7 +749,7 @@ a.list-cell-venue:hover { color: var(--white); }
 }
 
 @media (max-width: 480px) {
-  .content { padding: 4rem 0.6rem 1.2rem !important; }
+  .content { padding: 0.8rem 0.6rem 5.5rem !important; }
   .date-block-num { font-size: 1.4rem !important; }
   .page-title { font-size: 1.2rem !important; }
   /* .hstat all visible on mobile */
@@ -831,7 +852,7 @@ a.list-cell-venue:hover { color: var(--white); }
   .dispon-overview-title { font-size: 0.5rem !important; }
 
   /* Bottom nav safe area */
-  .bottom-nav { padding-top: max(calc(env(safe-area-inset-top) + 0.3rem), 0.5rem) !important; }
+  .bottom-nav { padding-bottom: max(calc(env(safe-area-inset-bottom) + 0.5rem), 0.5rem) !important; }
 }
 
 @media (max-width: 480px) {
@@ -916,7 +937,7 @@ a.list-cell-venue:hover { color: var(--white); }
 /* ── BOTTOM NAV: same font as desktop nav ── */
 .bn-label {
   font-family: 'Outfit', sans-serif !important;
-  font-size: 0.55rem !important;
+  font-size: 0.62rem !important;
   letter-spacing: 0 !important;
   font-weight: 600 !important;
 }
@@ -1058,6 +1079,89 @@ a.list-cell-venue:hover { color: var(--white); }
   border-radius: 10px;
   outline: 2px solid var(--calendar);
 }
+
+/* ── RESOCONTO MODAL ── */
+#resocontoModal { position:fixed; inset:0; z-index:8500; background:rgba(0,0,0,0.8); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:1rem; }
+#resocontoModal.hidden { display:none; }
+.res-box { background:var(--surface); border:1px solid var(--border2); border-radius:16px; width:100%; max-width:560px; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; }
+.res-header { padding:1.4rem 1.6rem 1rem; border-bottom:1px solid var(--border); flex-shrink:0; }
+.res-title { font-size:1.1rem; font-weight:800; color:var(--white); }
+.res-subtitle { font-family:'JetBrains Mono',monospace; font-size:0.58rem; color:var(--dimtext); letter-spacing:0.1em; margin-top:0.2rem; }
+.res-close { background:none; border:none; color:var(--dimtext); cursor:pointer; font-size:1.2rem; }
+.res-close:hover { color:var(--white); }
+.res-stats { display:flex; gap:0.7rem; flex-wrap:wrap; padding:1rem 1.6rem; border-bottom:1px solid var(--border); flex-shrink:0; }
+.res-stat { flex:1; min-width:80px; background:var(--surface2); border-radius:10px; padding:0.7rem 0.8rem; text-align:center; border:1px solid var(--border); }
+.res-stat-num { font-size:1.6rem; font-weight:800; line-height:1; }
+.res-stat-label { font-family:'JetBrains Mono',monospace; font-size:0.48rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--dimtext); margin-top:0.2rem; }
+.res-body { flex:1; overflow-y:auto; padding:1rem 1.6rem; }
+.res-section-title { font-family:'JetBrains Mono',monospace; font-size:0.55rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--dimtext); margin-bottom:0.6rem; margin-top:1rem; }
+.res-section-title:first-child { margin-top:0; }
+.res-member-row { display:flex; align-items:center; gap:0.7rem; padding:0.5rem 0.6rem; border-radius:8px; margin-bottom:0.3rem; }
+.res-member-row.presente  { background:rgba(52,211,153,0.1);  border:1px solid rgba(52,211,153,0.25); }
+.res-member-row.in-forse  { background:rgba(251,191,36,0.1);  border:1px solid rgba(251,191,36,0.25); }
+.res-member-row.assente   { background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.25); }
+.res-member-row.nd        { background:rgba(120,120,160,0.06); border:1px solid var(--border); }
+.res-member-row.not-called{ background:var(--surface2); border:1px solid var(--border); opacity:0.45; }
+.res-av { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700; flex-shrink:0; }
+.res-av.presente  { background:rgba(52,211,153,0.2);  color:var(--green); }
+.res-av.in-forse  { background:rgba(251,191,36,0.2);  color:var(--amber); }
+.res-av.assente   { background:rgba(248,113,113,0.2); color:var(--red); }
+.res-av.nd        { background:var(--surface3); color:var(--dimtext); }
+.res-av.not-called{ background:var(--surface3); color:var(--dimtext); }
+.res-name { flex:1; font-size:0.82rem; font-weight:600; color:var(--text); }
+.res-badge { font-size:0.62rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:100px; }
+.res-badge.presente  { background:rgba(52,211,153,0.2);  color:var(--green); }
+.res-badge.in-forse  { background:rgba(251,191,36,0.2);  color:var(--amber); }
+.res-badge.assente   { background:rgba(248,113,113,0.2); color:var(--red); }
+.res-badge.nd        { background:var(--surface2); color:var(--dimtext); }
+.res-badge.not-called{ background:var(--surface2); color:var(--dimtext); }
+.res-btn { padding:0.22rem 0.6rem; font-size:0.62rem; font-weight:700; border:1px solid rgba(169,125,250,0.4); background:rgba(169,125,250,0.1); color:var(--calendar); cursor:pointer; border-radius:5px; white-space:nowrap; transition:all 0.12s; }
+.res-btn:hover { background:rgba(169,125,250,0.2); }
+@media (max-width:768px) {
+  .res-box { border-radius:16px 16px 0 0; max-width:100%; }
+  #resocontoModal { align-items:flex-end; }
+  .res-stats { gap:0.4rem; }
+  .res-stat-num { font-size:1.3rem; }
+}
+
+.user-role-badge.semi-admin { background:rgba(251,191,36,0.12); border-color:rgba(251,191,36,0.4); color:var(--amber); }
+
+/* ── FINANZE 70% BOX ── */
+.finanze-70-box {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.35);
+  border-radius: 8px; padding: 0.4rem 0.9rem; min-width: 90px;
+}
+.finanze-70-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.5rem;
+  letter-spacing: 0.15em; color: var(--amber); text-transform: uppercase;
+}
+.finanze-70-val {
+  font-size: 1.1rem; font-weight: 800; color: var(--amber); line-height: 1.2;
+  margin-top: 0.1rem;
+}
+
+/* ── DETTAGLIO CACHET MODAL ── */
+#cachetModal { position:fixed; inset:0; z-index:8600; background:rgba(0,0,0,0.8); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:1rem; }
+#cachetModal.hidden { display:none; }
+.cachet-box { background:var(--surface); border:1px solid var(--border2); border-radius:16px; width:100%; max-width:520px; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; }
+.cachet-header { padding:1.2rem 1.5rem 0.8rem; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+.cachet-title { font-size:1rem; font-weight:800; color:var(--white); }
+.cachet-close { background:none; border:none; color:var(--dimtext); cursor:pointer; font-size:1.1rem; }
+.cachet-close:hover { color:var(--white); }
+.cachet-toolbar { padding:0.6rem 1.5rem; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; gap:0.8rem; }
+.cachet-body { flex:1; overflow-y:auto; padding:0.8rem 1.5rem 1rem; }
+.cachet-row { display:flex; align-items:center; gap:0.6rem; padding:0.55rem 0; border-bottom:1px solid var(--surface2); }
+.cachet-row:last-child { border-bottom:none; }
+.cachet-row.past { opacity:0.6; }
+.cachet-row-date { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--dimtext); min-width:80px; flex-shrink:0; }
+.cachet-row-info { flex:1; font-size:0.8rem; color:var(--text); }
+.cachet-row-pct { font-size:0.65rem; color:var(--dimtext); padding:0.1rem 0.4rem; background:var(--surface2); border-radius:4px; flex-shrink:0; }
+.cachet-row-amount { font-size:0.88rem; font-weight:700; min-width:70px; text-align:right; flex-shrink:0; }
+.cachet-total { display:flex; justify-content:space-between; align-items:center; padding:0.8rem 0 0; margin-top:0.4rem; border-top:2px solid var(--border2); }
+.cachet-total-label { font-family:'JetBrains Mono',monospace; font-size:0.58rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--dimtext); }
+.cachet-total-num { font-size:1.4rem; font-weight:800; }
+@media(max-width:768px){ .cachet-box{border-radius:16px 16px 0 0;max-width:100%;} #cachetModal{align-items:flex-end;} }
 </style>
 </head>
 <body>
@@ -1069,6 +1173,44 @@ a.list-cell-venue:hover { color: var(--white); }
 </nav>
 
 
+
+
+
+<!-- CACHET DETTAGLIO MODAL -->
+<div id="cachetModal" class="hidden">
+  <div class="cachet-box">
+    <div class="cachet-header">
+      <div>
+        <div class="cachet-title" id="cachetModalTitle">Dettaglio Cachet</div>
+      </div>
+      <button class="cachet-close" onclick="closeCachetModal()">&#10005;</button>
+    </div>
+    <div class="cachet-toolbar">
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;color:var(--dimtext);cursor:pointer">
+        <input type="checkbox" id="cachetHidePast" style="accent-color:var(--calendar)" onchange="renderCachetModal()">
+        Nascondi date passate
+      </label>
+    </div>
+    <div class="cachet-body" id="cachetBody"></div>
+  </div>
+</div>
+
+<!-- RESOCONTO MODAL -->
+<div id="resocontoModal" class="hidden">
+  <div class="res-box">
+    <div class="res-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem">
+        <div>
+          <div class="res-title" id="resTitleEl">Resoconto data</div>
+          <div class="res-subtitle" id="resSubtitleEl">—</div>
+        </div>
+        <button class="res-close" onclick="closeResocontoModal()">&#10005;</button>
+      </div>
+    </div>
+    <div class="res-stats" id="resStatsEl"></div>
+    <div class="res-body" id="resBodyEl"></div>
+  </div>
+</div>
 
 <!-- LOGIN OVERLAY -->
 <div id="loginOverlay" class="hidden">
@@ -1112,7 +1254,7 @@ a.list-cell-venue:hover { color: var(--white); }
       <div class="fg"><label>Username *</label><input type="text" id="eu-user"></div>
       <div class="fg"><label>Nuova Password</label><input type="password" id="eu-pass" placeholder="Lascia vuoto = invariata"></div>
       <div class="fg"><label>Sesso</label><select id="eu-sesso"><option value="m">&#9794; Uomo</option><option value="f">&#9792; Donna</option></select></div>
-      <div class="fg"><label>Ruolo</label><select id="eu-role"><option value="user">Utente</option><option value="admin">Admin</option></select></div>
+      <div class="fg"><label>Ruolo</label><select id="eu-role"><option value="user">Utente</option><option value="semi-admin">Semi-Admin</option><option value="admin">Admin</option></select></div>
     </div>
     <input type="hidden" id="eu-id">
     <div class="modal-actions">
@@ -1174,15 +1316,15 @@ a.list-cell-venue:hover { color: var(--white); }
     <div class="nav-item" data-show="i80"     onclick="showView('i80')">    <span class="nav-dot" style="background:#4ec9f0"></span> I Love '80</div>
     <div class="nav-group-label">Strumenti</div>
     <div class="nav-item" data-show="finanze" onclick="showView('finanze')">
-      <span class="nav-dot" style="background:#34d399"></span> Calcolo Finanze
+      <span class="nav-dot" style="background:#34d399"></span> Calcolo Cachet
     </div>
     <div class="nav-group-label">Sistema</div>
     <div class="nav-item" data-show="impostazioni" onclick="showView('impostazioni')">
       <span class="nav-dot" style="background:#a0a0c0"></span> Impostazioni
     </div>
     <div class="nav-group-label" id="adminNavLabel" style="display:none">Admin</div>
-    <div class="nav-item" data-show="persone" id="personeNavItem" style="display:none" onclick="showView('persone')">
-      <span class="nav-dot" style="background:var(--calendar)"></span> Persone
+    <div class="nav-item" data-show="membri" id="membriNavItem" style="display:none" onclick="showView('membri')">
+      <span class="nav-dot" style="background:var(--calendar)"></span> Membri
     </div>
   </aside>
 
@@ -1226,10 +1368,10 @@ a.list-cell-venue:hover { color: var(--white); }
 
 
     <!-- PERSONE VIEW -->
-    <div id="view-persone" class="view" style="--accent:var(--calendar)">
+    <div id="view-membri" class="view" style="--accent:var(--calendar)">
       <div class="page-header">
-        <div><div class="page-title">Persone</div><div class="page-sub">Gestione utenti e membri</div></div>
-        <button class="btn btn-sm btn-accent" style="--accent:var(--calendar)" onclick="toggleAddUserForm()">+ Nuova Persona</button>
+        <div><div class="page-title">Membri</div><div class="page-sub">Gestione membri e accessi</div></div>
+        <button class="btn btn-sm btn-accent" style="--accent:var(--calendar)" onclick="toggleAddUserForm()">+ Nuovo Membro</button>
       </div>
       <div class="add-user-form" id="addUserForm" style="display:none">
         <div class="form-grid">
@@ -1237,7 +1379,7 @@ a.list-cell-venue:hover { color: var(--white); }
           <div class="fg"><label>Username *</label><input type="text" id="u-user" placeholder="mario.rossi"></div>
           <div class="fg"><label>Password *</label><input type="password" id="u-pass" placeholder="••••••••"></div>
           <div class="fg"><label>Sesso</label><select id="u-sesso"><option value="m">&#9794; Uomo</option><option value="f">&#9792; Donna</option></select></div>
-          <div class="fg"><label>Ruolo</label><select id="u-role"><option value="user">Utente</option><option value="admin">Admin</option></select></div>
+          <div class="fg"><label>Ruolo</label><select id="u-role"><option value="user">Utente</option><option value="semi-admin">Semi-Admin</option><option value="admin">Admin</option></select></div>
         </div>
         <div class="form-actions">
           <button class="btn btn-ghost btn-sm" onclick="toggleAddUserForm()">Annulla</button>
@@ -1252,7 +1394,7 @@ a.list-cell-venue:hover { color: var(--white); }
     <div id="view-finanze" class="view" style="--accent:#34d399">
       <div class="page-header">
         <div>
-          <div class="page-title">Calcolo Calcolo Finanze</div>
+          <div class="page-title">Calcolo Calcolo Cachet</div>
           <div class="page-sub" id="finanze-sub">Le tue entrate</div>
         </div>
       </div>
@@ -1305,6 +1447,7 @@ const SHOW_IMGS = {
 const MESI   = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
 const MESI3  = ["GEN","FEB","MAR","APR","MAG","GIU","LUG","AGO","SET","OTT","NOV","DIC"];
 const GIORNI3= ["DOM","LUN","MAR","MER","GIO","VEN","SAB"];
+const GIORNI = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
 const RUOLI  = ["Cast","Coro","Ballerino/a","Musicista","Tecnico","Regia","Altro"];
 const PARTECIPANTI = [
   "Alessia Bianchi","Alessandro Rossi","Alice Conti","Andrea Ferretti",
@@ -1359,9 +1502,10 @@ function showView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+id).classList.add("active");
-  document.querySelector(".nav-item[data-show=\""+id+"\"]").classList.add("active");
+  var _navEl=document.querySelector(".nav-item[data-show=\""+id+"\"]");
+  if(_navEl) _navEl.classList.add("active");
   if(id==="calendar"){ calTab==="list"?renderCalList():renderCalendar(); }
-  else if(id==="persone"){ renderUsersView(); }
+  else if(id==="membri"){ renderMembriView(); }
   else if(id==="finanze"){ renderFinanze(); }
   else if(id==="impostazioni"){ renderImpostazioni(); }
   else if(id==="home"){ renderHome(); }
@@ -1392,6 +1536,15 @@ function renderMonthGroups(dateEntries, showId){
   });
   return html;
 }
+
+// ── Permissions helper ──
+function canManageShow(showId){
+  if(!currentUser) return false;
+  if(currentUser.role==='admin') return true;
+  if(currentUser.role==='semi-admin') return showId==='freddie'||showId==='i80';
+  return false;
+}
+function isAdminLike(){ return currentUser&&(currentUser.role==='admin'||currentUser.role==='semi-admin'); }
 
 function renderDateItem(d, showId, loc, extraTimes){
   var dt=parseDate(d.data);
@@ -1451,8 +1604,10 @@ function renderDateItem(d, showId, loc, extraTimes){
     +'<div class="date-item-actions">'
     +myDispon
     +'<button class="dispon-panel-btn" onclick="event.stopPropagation();toggleDisponOverview(\''+d.id+'\')" title="Vedi disponibilit&#224; di tutti">&#128101;&#8250;</button>'
+    +(canManageShow(showId)?'<button class="dispon-panel-btn" onclick="event.stopPropagation();openRdModal(\''+d.id+'\',\''+showId+'\')" title="Richiesta Disponibilit&#224;">&#128203; RD</button>':"")
     +(currentUser&&currentUser.role==="admin"?'<button class="btn btn-ghost btn-sm" style="padding:0.2rem 0.4rem;color:rgba(248,113,113,0.5)" onclick="event.stopPropagation();eliminaData(\''+showId+'\',\''+d.id+'\')">&#10005;</button>':"")
     +'<span class="date-chevron" id="chv-'+d.id+'">&#8250;</span>'
+    +(canManageShow(showId)?'<button class="res-btn" onclick="event.stopPropagation();openResoconto(\\\'\'+d.id+\'\\\',\\\'\'+showId+\'\\\')">&#128202;</button>':"")
     +'</div></div>'
     +'<div class="dispon-overview" id="dov-'+d.id+'"><div class="dispon-overview-title">Disponibilit&agrave; &mdash; tutti gli utenti</div><div id="dovList-'+d.id+'"></div></div>'
     +detail+'</div>';
@@ -1479,7 +1634,7 @@ function renderShow(id){
     +'</div>'
     +'<div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">'
     +'<label class="hide-past-toggle"><input type="checkbox" id="hidePastShow-'+id+'" '+(doHide?'checked':'')+' onchange="renderShow(\''+id+'\')"> Nascondi show passati</label>'
-    +(isAdmin?'<button class="btn btn-sm btn-accent" style="--accent:'+show.color+'" onclick="toggleAddForm(\''+id+'\')">+ Data</button>':"")
+    +(currentUser&&currentUser.role==='admin'?'<button class="btn btn-sm btn-accent" style="--accent:'+show.color+'" onclick="toggleAddForm(\''+id+'\')">+ Data</button>':"")
     +'</div></div>';
 
   var addForm=isAdmin?'<div class="add-form" id="addForm-'+id+'">'
@@ -1783,13 +1938,36 @@ function renderCalList(){
 
   // Group same-day same-show
   function groupAndRender(events){
-    var bds={};
+    // Group by month first
+    var byMonth={};
     events.forEach(function(ev){
-      var k=ev.d.data+"||"+ev.sid;
-      if(!bds[k]) bds[k]={primary:ev,extras:[]};
-      else bds[k].extras.push(ev.d.ora);
+      var mk=ev.d.data.substring(0,7);
+      if(!byMonth[mk]) byMonth[mk]=[];
+      byMonth[mk].push(ev);
     });
-    return Object.values(bds).map(function(g){ return renderListRow(g); }).join("");
+    var html='';
+    Object.keys(byMonth).sort().forEach(function(mk){
+      var evs=byMonth[mk];
+      var parts=mk.split('-'), y=parts[0], m=parts[1];
+      var monthName=MESI[parseInt(m)-1]+' '+y;
+      // Group same-day same-show
+      var bds={};
+      evs.forEach(function(ev){
+        var k=ev.d.data+"||"+ev.sid;
+        if(!bds[k]) bds[k]={primary:ev,extras:[]};
+        else bds[k].extras.push(ev.d.ora);
+      });
+      var groups=Object.values(bds);
+      html+='<div class="month-group">'
+        +'<div class="month-heading">'
+        +'<div class="month-heading-name">'+monthName+'</div>'
+        +'<div class="month-heading-spacer"></div>'
+        +'<div class="month-heading-count"><strong>'+groups.length+'</strong> date</div>'
+        +'</div>'
+        +groups.map(function(g){ return renderListRow(g); }).join('')
+        +'</div>';
+    });
+    return html||'<div class="empty">Nessuna data</div>';
   }
 
   var html="";
@@ -1967,7 +2145,7 @@ function doLogout(){
   document.getElementById('loginOverlay').classList.remove('hidden');
   document.getElementById('currentUserBar').style.display='none';
   document.getElementById('adminNavLabel').style.display='none';
-  document.getElementById('personeNavItem').style.display='none';
+  document.getElementById('membriNavItem').style.display='none';
   document.getElementById('loginUser').value='';
   document.getElementById('loginPass').value='';
 }
@@ -1978,8 +2156,14 @@ function applySession(){
   // finanze visible to everyone
   // finanze always visible in sidebar
   if(currentUser.role==='admin'){
-    document.getElementById('adminNavLabel').style.display='';
-    document.getElementById('personeNavItem').style.display='';
+    var _al=document.getElementById('adminNavLabel');
+    var _mn=document.getElementById('membriNavItem');
+    if(_al) _al.style.display='';
+    if(_mn) _mn.style.display='';
+  }
+  // semi-admin label in header
+  if(currentUser.role==='semi-admin'){
+    // no extra nav items, behaves like user for navigation
   }
   updateHeaderStats();
   // default to list tab
@@ -1988,7 +2172,11 @@ function applySession(){
   document.getElementById('tab-list').classList.add('active');
   document.getElementById('tab-grid').classList.remove('active');
   buildBottomNav();
-  showView('home');
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      showView('home');
+    });
+  });
 }
 
 // ══════ PERSONE ══════
@@ -2003,7 +2191,7 @@ function saveNewUser(){
   var users=loadUsers()||[];
   if(users.find(function(u){return u.username===uname;})){ toast('Username già in uso'); return; }
   users.push({id:uid(),username:uname,nome:nome,role:role,sesso:sesso,passHash:hashPass(pass)});
-  saveUsers(users); toast('Persona creata'); toggleAddUserForm(); renderUsersView(); updateHeaderStats();
+  saveUsers(users); toast('Persona creata'); toggleAddUserForm(); renderMembriView(); updateHeaderStats();
 }
 function openEditUser(userId){
   var u=(loadUsers()||[]).find(function(x){return x.id===userId;}); if(!u) return;
@@ -2030,25 +2218,26 @@ function saveEditUser(){
   if(pass) u.passHash=hashPass(pass);
   saveUsers(users);
   if(currentUser&&currentUser.id===userId){ currentUser=u; applySession(); }
-  toast('Aggiornato'); closeModal('editUserModal'); renderUsersView();
+  toast('Aggiornato'); closeModal('editUserModal'); renderMembriView();
 }
 function deleteUser(userId){
   if(!confirm('Eliminare?')) return;
   if(userId==='admin_default'){ toast('Non eliminabile'); return; }
   saveUsers((loadUsers()||[]).filter(function(u){return u.id!==userId;}));
-  toast('Eliminato'); renderUsersView(); updateHeaderStats();
+  toast('Eliminato'); renderMembriView(); updateHeaderStats();
 }
-function renderUsersView(){
+function renderMembriView(){
   var users=loadUsers()||[], list=document.getElementById('usersList');
   if(!list) return;
   if(!users.length){ list.innerHTML='<div class="empty">Nessuna persona registrata</div>'; return; }
   list.innerHTML=users.map(function(u){
     var av=u.nome.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+    var roleLabel={'admin':'Admin','semi-admin':'Semi-Admin','user':'Utente'}[u.role]||u.role;
     var sb=u.sesso?'<span class="sesso-badge '+u.sesso+'">'+(u.sesso==='m'?'&#9794; Uomo':'&#9792; Donna')+'</span>':'';
     return '<div class="user-row">'
-      +'<div class="user-avatar '+(u.role==='admin'?'admin':'')+'">'+(av||'?')+'</div>'
+      +'<div class="user-avatar '+(u.role==='admin'?'admin':u.role==='semi-admin'?'semi-admin':'')+'">'+(av||'?')+'</div>'
       +'<div class="user-info"><div class="user-name">'+esc(u.nome)+'</div><div class="user-username">@'+esc(u.username)+'</div></div>'
-      +sb+'<span class="user-role-badge '+u.role+'">'+u.role+'</span>'
+      +sb+'<span class="user-role-badge '+u.role+'">'+roleLabel+'</span>'
       +'<button class="btn btn-ghost btn-sm" onclick="openEditUser(\''+u.id+'\')">&#9998; Modifica</button>'
       +(u.id!=='admin_default'?'<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteUser(\''+u.id+'\')">&#10005;</button>':'')
       +'</div>';
@@ -2145,19 +2334,37 @@ function setMyTariffa(val){
 }
 
 function getMyPresenze(){
-  // returns {showId: count} of dates where user answered 'presente'
+  // For each show, for each day where user marked 'presente' on ANY replica,
+  // count ALL replicas that day (full pay for first, 70% for subsequent)
   var result={};
   if(!currentUser||!state.dispon) return result;
   Object.keys(SHOWS).forEach(function(sid){
-    var count=0;
+    // Build map of all dates by day for this show
+    var datesByDay={};
     state.date[sid].forEach(function(d){
-      var dp=state.dispon[d.id]||{};
-      if(dp[currentUser.username]==='presente') count++;
+      if(!datesByDay[d.data]) datesByDay[d.data]=[];
+      datesByDay[d.data].push(d);
     });
-    result[sid]=count;
+    var count=0, fullPay=0, reducedPay=0;
+    Object.keys(datesByDay).forEach(function(day){
+      var datesOnDay=datesByDay[day];
+      // Check if user is present on ANY date of this day
+      var userPresent=datesOnDay.some(function(d){
+        var dp=state.dispon[d.id]||{};
+        return dp[currentUser.username]==='presente';
+      });
+      if(userPresent){
+        var n=datesOnDay.length;
+        count+=n;
+        fullPay+=1;            // first replica: 100%
+        reducedPay+=(n-1)*0.7; // subsequent: 70%
+      }
+    });
+    result[sid]={count:count,fullPay:fullPay,reducedPay:reducedPay,effectiveDates:fullPay+reducedPay};
   });
   return result;
 }
+
 
 function renderFinanze(){
   if(!currentUser) return;
@@ -2165,18 +2372,27 @@ function renderFinanze(){
   if(!wrap) return;
   var tariffa=getMyTariffa();
   var presenze=getMyPresenze();
-  var totDate=0;
-  Object.keys(SHOWS).forEach(function(sid){ totDate+=presenze[sid]||0; });
-  var totEuro=tariffa*totDate;
+  var totDate=0, totEffective=0;
+  Object.keys(SHOWS).forEach(function(sid){
+    var p=presenze[sid]||{};
+    totDate+=(typeof p==='object'?p.count:p)||0;
+    totEffective+=(typeof p==='object'?p.effectiveDates:p)||0;
+  });
+  var totEuro=tariffa*totEffective;
 
   // Tariffa input
+  var tariffa70=Math.round(tariffa*0.7*100)/100;
   var tariffaBox='<div class="finanze-tariffa-box">'
     +'<div class="finanze-tariffa-label">La tua tariffa per data</div>'
     +'<div class="finanze-tariffa-row">'
     +'<input class="finanze-tariffa-input" type="number" min="0" step="1" value="'+tariffa+'" id="tariffaInput" oninput="onTariffaChange(this.value)" placeholder="0">'
-    +'<span class="finanze-euro">€ / data</span>'
+    +'<span class="finanze-euro">€</span>'
+    +'<div class="finanze-70-box">'
+    +'<div class="finanze-70-label">70%</div>'
+    +'<div class="finanze-70-val" id="val70">'+formatEuro(tariffa70)+'</div>'
     +'</div>'
-    +'<div class="finanze-tariffa-hint">Inserisci il tuo compenso per ogni data di spettacolo a cui partecipi.</div>'
+    +'</div>'
+    +'<div class="finanze-tariffa-hint">Prima replica: 100% &bull; Repliche successive stesso giorno: 70%</div>'
     +'</div>';
 
   // Totale
@@ -2184,7 +2400,7 @@ function renderFinanze(){
     +'<div>'
     +'<div class="finanze-totale-label">Totale stimato</div>'
     +'<div class="finanze-totale-num">'+formatEuro(totEuro)+'</div>'
-    +'<div class="finanze-totale-sub">'+totDate+' dat'+(totDate===1?'a':'e')+' confermate &times; '+formatEuro(tariffa)+'</div>'
+    +'<div class="finanze-totale-sub">'+totDate+' dat'+(totDate===1?'a':'e')+' ('+formatEuro(totEffective)+' effettive) &times; '+formatEuro(tariffa)+'</div>'
     +'</div>'
     +'<div style="font-size:2.5rem; opacity:0.3">&#128176;</div>'
     +'</div>';
@@ -2193,13 +2409,21 @@ function renderFinanze(){
   var showsGrid='<div class="finanze-shows-grid">';
   Object.keys(SHOWS).forEach(function(sid){
     var show=SHOWS[sid];
-    var n=presenze[sid]||0;
-    var euro=tariffa*n;
+    var pObj=presenze[sid]||{count:0,fullPay:0,reducedPay:0,effectiveDates:0};
+    var n=typeof pObj==='object'?pObj.count:pObj;
+    var eff=typeof pObj==='object'?pObj.effectiveDates:pObj;
+    var euro=tariffa*eff;
+    var dettaglio=typeof pObj==='object'&&pObj.reducedPay>0
+      ?'<div class="finanze-show-dates" style="font-size:0.58rem;color:var(--dimtext)">'+pObj.fullPay+' &times; 100% + '+(pObj.reducedPay/0.7|0)+' &times; 70%</div>'
+      :'';
+    var detBtn='<button class="btn btn-sm" style="margin-top:0.6rem;width:100%;font-size:0.65rem;border-color:'+show.color+'40;color:'+show.color+'" onclick="openCachetModal(\''+sid+'\')">&#128202; Dettaglio date</button>';
     showsGrid+='<div class="finanze-show-card" style="--sc:'+show.color+'">'
       +'<div class="finanze-show-name" style="color:'+show.color+'">'+esc(show.label)+'</div>'
       +'<div class="finanze-show-dates">'+n+' dat'+(n===1?'a':'e')+' confermate</div>'
+      +dettaglio
       +'<div class="finanze-show-amount" style="color:'+show.color+'">'+formatEuro(euro)+'</div>'
-      +'<div class="finanze-show-amount-sub">'+n+' &times; '+formatEuro(tariffa)+'</div>'
+      +'<div class="finanze-show-amount-sub">'+formatEuro(eff)+' cachet effettivi</div>'
+      +detBtn
       +'</div>';
   });
   showsGrid+='</div>';
@@ -2212,28 +2436,36 @@ function renderFinanze(){
 }
 
 function onTariffaChange(val){
-  setMyTariffa(parseFloat(val)||0);
-  // Update totals live without full re-render
-  var tariffa=parseFloat(val)||0;
+  var raw=parseFloat(String(val).replace(',','.'));
+  var tariffa=(isNaN(raw)||!isFinite(raw)||raw<0)?0:raw;
+  setMyTariffa(tariffa);
+  // Update 70% box
+  var el70=document.getElementById('val70');
+  if(el70) el70.textContent=formatEuro(Math.round(tariffa*0.7*100)/100);
+  // Update totals
   var presenze=getMyPresenze();
-  var totDate=0;
-  Object.keys(SHOWS).forEach(function(sid){ totDate+=presenze[sid]||0; });
-  var totEuro=tariffa*totDate;
-  // Update totale box
+  var totDate=0, totEffective=0;
+  Object.keys(SHOWS).forEach(function(sid){
+    var p=presenze[sid]||{};
+    totDate+=(p.count||0);
+    totEffective+=(p.effectiveDates||0);
+  });
+  var totEuro=tariffa*totEffective;
   var tnum=document.querySelector('.finanze-totale-num');
   var tsub=document.querySelector('.finanze-totale-sub');
   if(tnum) tnum.textContent=formatEuro(totEuro);
-  if(tsub) tsub.textContent=totDate+' dat'+(totDate===1?'a':'e')+' confermate \u00d7 '+formatEuro(tariffa);
-  // Update each show card
+  if(tsub) tsub.textContent=totDate+' dat'+(totDate===1?'a':'e')+' ('+formatEuro(totEffective)+' effettive) \u00d7 '+formatEuro(tariffa);
   var cards=document.querySelectorAll('.finanze-show-card');
   var sids=Object.keys(SHOWS);
   cards.forEach(function(card,i){
     var sid=sids[i]; if(!sid) return;
-    var n=presenze[sid]||0; var euro=tariffa*n;
+    var pObj=presenze[sid]||{};
+    var eff=pObj.effectiveDates||0;
+    var euro=tariffa*eff;
     var amtEl=card.querySelector('.finanze-show-amount');
     var subEl=card.querySelector('.finanze-show-amount-sub');
     if(amtEl) amtEl.textContent=formatEuro(euro);
-    if(subEl) subEl.textContent=n+' \u00d7 '+formatEuro(tariffa);
+    if(subEl) subEl.textContent=formatEuro(eff)+' cachet effettivi';
   });
 }
 
@@ -2255,7 +2487,7 @@ function buildBottomNav(){
     {id:'i80',          label:"I Love '80",  color:'#4ec9f0'},
     {id:'finanze',      label:'Finanze',     color:'#34d399'},
     {id:'impostazioni', label:'Impostazioni',color:'#a0a0c0'},
-    {id:'persone',      label:'Persone',     color:'var(--calendar)', adminOnly:true},
+    {id:'persone',      label:'Membri',     color:'var(--calendar)', adminOnly:true},
   ];
   inner.innerHTML=items.map(function(item){
     if(item.adminOnly && (!currentUser||currentUser.role!=='admin')) return '';
@@ -2444,127 +2676,98 @@ var _countdownTimer = null;
 
 function renderHome(){
   if(!currentUser) return;
-  var wrap = document.getElementById('homeWrap');
-  if(!wrap) return;
+  var wrap=document.getElementById('homeWrap');
+  if(!wrap){ setTimeout(renderHome,200); return; }
 
-  if(_countdownTimer){ clearInterval(_countdownTimer); _countdownTimer=null; }
+  var now=new Date();
+  var h=now.getHours();
+  var saluto=h<12?'Buongiorno':(h<18?'Buon pomeriggio':'Buonasera');
+  var dateStr=GIORNI[now.getDay()]+', '+now.getDate()+' '+MESI[now.getMonth()]+' '+now.getFullYear();
+  var today=todayISO();
 
-  // Greeting
-  var now = new Date();
-  var hour = now.getHours();
-  var saluto = hour<12?'Buongiorno':hour<18?'Buon pomeriggio':'Buonasera';
-  var giorni=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
-  var mesiLong=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-  var dateStr=giorni[now.getDay()]+', '+now.getDate()+' '+mesiLong[now.getMonth()]+' '+now.getFullYear();
-
-  // Find all future dates where user is selected + has confirmed "presente"
-  var allConfirmed=[];
-  Object.keys(SHOWS).forEach(function(sid){
-    state.date[sid].forEach(function(d){
-      if(d.data<todayISO()) return;
-      var rdList=(state.rdsel&&state.rdsel[d.id])||[];
-      if(rdList.indexOf(currentUser.id)===-1) return;
-      var dp=(state.dispon&&state.dispon[d.id])||{};
-      if(dp[currentUser.username]==='presente'){
-        allConfirmed.push({d:d, sid:sid, show:SHOWS[sid]});
-      }
+  // Find next confirmed show
+  var nextItem=null;
+  var allFuture=[];
+  try{
+    Object.keys(SHOWS).forEach(function(sid){
+      (state.date[sid]||[]).forEach(function(d){
+        if(d.data<today) return;
+        var rdList=(state.rdsel&&state.rdsel[d.id])||[];
+        if(rdList.indexOf(currentUser.id)===-1) return;
+        var dp=(state.dispon&&state.dispon[d.id])||{};
+        if(dp[currentUser.username]==='presente') allFuture.push({d:d,sid:sid});
+      });
     });
-  });
-  allConfirmed.sort(function(a,b){return a.d.data.localeCompare(b.d.data);});
-  var nextConfirmed = allConfirmed.length ? allConfirmed[0] : null;
+  }catch(e){}
+  allFuture.sort(function(a,b){return a.d.data.localeCompare(b.d.data);});
+  if(allFuture.length) nextItem=allFuture[0];
 
-  // Pending: selected but no answer
+  // Find pending requests
   var pending=[];
-  Object.keys(SHOWS).forEach(function(sid){
-    state.date[sid].forEach(function(d){
-      if(d.data<todayISO()) return;
-      var rdList=(state.rdsel&&state.rdsel[d.id])||[];
-      if(rdList.indexOf(currentUser.id)===-1) return;
-      var dp=(state.dispon&&state.dispon[d.id])||{};
-      if(!dp[currentUser.username]){
-        var dt=parseDate(d.data); var loc=state.location[d.id]||{};
-        pending.push({d:d, sid:sid, show:SHOWS[sid], citta:d.citta||loc.citta||'', dt:dt});
-      }
+  try{
+    Object.keys(SHOWS).forEach(function(sid){
+      (state.date[sid]||[]).forEach(function(d){
+        if(d.data<today) return;
+        var rdList=(state.rdsel&&state.rdsel[d.id])||[];
+        if(rdList.indexOf(currentUser.id)===-1) return;
+        var dp=(state.dispon&&state.dispon[d.id])||{};
+        if(!dp[currentUser.username]){
+          var loc=state.location[d.id]||{};
+          pending.push({d:d,sid:sid,show:SHOWS[sid],citta:d.citta||loc.citta||''});
+        }
+      });
     });
-  });
+  }catch(e){}
   pending.sort(function(a,b){return a.d.data.localeCompare(b.d.data);});
 
-  // ── Welcome card ──
-  var welcomeHtml='<div class="home-welcome">'
+  var html='';
+
+  // Welcome
+  html+='<div class="home-welcome">'
     +'<div class="home-greeting">'+saluto+', <span>'+esc(currentUser.nome.split(' ')[0])+'</span> 👋</div>'
     +'<div class="home-date-str">'+dateStr+'</div>'
     +'</div>';
 
-  // ── Next confirmed show card (ALWAYS shown) ──
-  var nextHtml='<div class="home-card">'
-    +'<div class="home-card-label">&#127919; Prossimo show confermato</div>';
-
-  if(nextConfirmed){
-    var nd=nextConfirmed.d, ns=nextConfirmed.show, nsid=nextConfirmed.sid;
+  // Next show
+  html+='<div class="home-card"><div class="home-card-label">🎯 Prossimo show confermato</div>';
+  if(nextItem){
+    var show=SHOWS[nextItem.sid];
+    var nd=nextItem.d;
     var loc2=state.location[nd.id]||{};
     var citta2=nd.citta||loc2.citta||'';
     var dt2=parseDate(nd.data);
-    var dateLabel=GIORNI[dt2.getDay()]+' '+dt2.getDate()+' '+MESI[dt2.getMonth()]+' '+dt2.getFullYear();
-    nextHtml+='<div class="home-next-show" style="--show-color:'+ns.color+'">'
-      +'<div class="home-next-name">'+esc(ns.label)+'</div>'
-      +'<div class="home-next-info">'+dateLabel+(citta2?' &mdash; '+esc(citta2):'')+(nd.ora?' &middot; '+esc(nd.ora):'')+'</div>'
+    var dlabel=GIORNI[dt2.getDay()]+' '+dt2.getDate()+' '+MESI[dt2.getMonth()]+' '+dt2.getFullYear();
+    html+='<div class="home-next-show" style="--show-color:'+show.color+'">'
+      +'<div class="home-next-name">'+esc(show.label)+'</div>'
+      +'<div class="home-next-info">'+dlabel+(citta2?' &mdash; '+esc(citta2):'')+(nd.ora?' &middot; '+esc(nd.ora):'')+'</div>'
       +'</div>'
-      +'<div class="home-adventure">Sei pronto alla prossima avventura? 🎭</div>'
-      +'<div class="home-countdown" id="homeCountdown">'
-      +'<div class="countdown-unit"><div class="countdown-num" id="cd-gg">--</div><div class="countdown-label">Giorni</div></div>'
-      +'<div class="countdown-unit"><div class="countdown-num" id="cd-hh">--</div><div class="countdown-label">Ore</div></div>'
-      +'<div class="countdown-unit"><div class="countdown-num" id="cd-mm">--</div><div class="countdown-label">Min</div></div>'
-      +'<div class="countdown-unit"><div class="countdown-num" id="cd-ss">--</div><div class="countdown-label">Sec</div></div>'
-      +'</div>';
+      +'<div class="home-adventure" style="margin-top:0.6rem;font-size:0.78rem;color:var(--dimtext);font-style:italic">Sei pronto alla prossima avventura? 🎭</div>';
   } else {
-    nextHtml+='<div class="home-empty-next">Nessuno show confermato in programma.'
-      +'<br><span style="font-size:0.75rem;color:var(--dimtext)">Segna la tua disponibilit&agrave; nelle sezioni spettacolo.</span></div>';
+    html+='<div class="home-empty-next">Nessuno show confermato in programma.<br>'
+      +'<span style="font-size:0.75rem;color:var(--dimtext)">Segna la tua disponibilit&agrave; nelle sezioni spettacolo.</span></div>';
   }
-  nextHtml+='</div>';
+  html+='</div>';
 
-  // ── Pending requests card ──
-  var pendingHtml='';
+  // Pending
   if(pending.length){
-    var pendingItems=pending.map(function(p){
-      var dt3=p.dt;
-      var label=esc(p.show.label)+' &mdash; '+dt3.getDate()+' '+MESI[dt3.getMonth()]+(p.citta?' ('+esc(p.citta)+')':'');
-      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid rgba(251,191,36,0.1)">'
-        +'<span style="font-size:0.78rem;color:var(--text)">'+label+'</span>'
-        +'<button class="btn btn-sm" style="flex-shrink:0;font-size:0.65rem;padding:0.2rem 0.6rem;background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.4);color:var(--amber)" '
-        +'onclick="scrollToDate(\''+p.sid+'\',\''+p.d.id+'\')">Rispondi &#8250;</button>'
+    var items=pending.map(function(p){
+      var dt3=parseDate(p.d.data);
+      var lbl=esc(p.show.label)+' &mdash; '+dt3.getDate()+' '+MESI[dt3.getMonth()]+(p.citta?' ('+esc(p.citta)+')':'');
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid rgba(251,191,36,0.12)">'
+        +'<span style="font-size:0.78rem;color:var(--text)">'+lbl+'</span>'
+        +'<button class="btn btn-sm" style="flex-shrink:0;font-size:0.65rem;padding:0.2rem 0.6rem;background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.4);color:var(--amber)"'
+        +' onclick="scrollToDate(\''+p.sid+'\',\''+p.d.id+'\')">Rispondi ›</button>'
         +'</div>';
     }).join('');
-    pendingHtml='<div class="home-pending">'
-      +'<div class="home-pending-icon">&#9888;</div>'
+    html+='<div class="home-pending">'
+      +'<div class="home-pending-icon">⚠</div>'
       +'<div style="flex:1">'
       +'<div class="home-pending-text"><strong>'+pending.length+' richiest'+(pending.length===1?'a':'e')+' in attesa</strong></div>'
-      +'<div class="home-pending-list" style="margin-top:0.5rem">'+pendingItems+'</div>'
+      +'<div style="margin-top:0.5rem">'+items+'</div>'
       +'</div></div>';
   }
 
-  wrap.innerHTML = welcomeHtml+nextHtml+pendingHtml;
-
-  // ── Start countdown ──
-  if(nextConfirmed){
-    var nd2=nextConfirmed.d;
-    var targetDate2=parseDate(nd2.data);
-    var parts=nd2.ora?nd2.ora.split(':'):[21,0];
-    var targetMs=targetDate2.getTime()+(parseInt(parts[0])*3600+parseInt(parts[1])*60)*1000;
-    function updateCountdown(){
-      var diff=targetMs-Date.now();
-      if(diff<=0){
-        ['cd-gg','cd-hh','cd-mm','cd-ss'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='00';});
-        clearInterval(_countdownTimer); _countdownTimer=null; return;
-      }
-      function pad(n){return String(Math.floor(n)).padStart(2,'0');}
-      var elG=document.getElementById('cd-gg'); if(elG) elG.textContent=pad(diff/86400000);
-      var elH=document.getElementById('cd-hh'); if(elH) elH.textContent=pad((diff%86400000)/3600000);
-      var elM=document.getElementById('cd-mm'); if(elM) elM.textContent=pad((diff%3600000)/60000);
-      var elS=document.getElementById('cd-ss'); if(elS) elS.textContent=pad((diff%60000)/1000);
-    }
-    updateCountdown();
-    _countdownTimer=setInterval(updateCountdown,1000);
-  }
+  wrap.innerHTML=html;
 }
 
 // ══════ SCROLL TO DATE ══════
@@ -2600,26 +2803,192 @@ function doScrollAndHighlight(card){
   setTimeout(function(){ card.classList.remove('highlighted'); }, 2200);
 }
 
-// ══════ INIT ══════
-loadTheme();
-try {
-  load();
-  ensureDefaultAdmin();
-  seedDates();
-  save();
-} catch(e){ console.warn('Init error:', e); }
-buildBottomNav();
-document.getElementById('loginOverlay').classList.remove('hidden');
+
+// ══════ RESOCONTO ══════
+function openResoconto(dateId, showId){
+  var show=SHOWS[showId];
+  var allDates=state.date[showId]||[];
+  var d=allDates.find(function(x){return x.id===dateId;})||{};
+  var loc=state.location[dateId]||{};
+  var citta=d.citta||loc.citta||'';
+  var dt=d.data?parseDate(d.data):new Date();
+  var dateStr=GIORNI[dt.getDay()]+' '+dt.getDate()+' '+MESI[dt.getMonth()]+' '+dt.getFullYear();
+  var allUsers=loadUsers()||[];
+  var rdList=(state.rdsel&&state.rdsel[dateId])||[];
+  var dp=(state.dispon&&state.dispon[dateId])||{};
+  var pr=state.presenze&&state.presenze[dateId]||{};
+
+  // Title
+  document.getElementById('resTitleEl').textContent=esc(show.label)+' — '+dateStr;
+  document.getElementById('resSubtitleEl').textContent=(citta?citta+' · ':'')+( d.ora||'');
+
+  // Categorize users
+  var called=[], notCalled=[];
+  allUsers.forEach(function(u){
+    if(rdList.indexOf(u.id)!==-1) called.push(u);
+    else notCalled.push(u);
+  });
+
+  var presenti   = called.filter(function(u){return dp[u.username]==='presente';});
+  var assenti    = called.filter(function(u){return dp[u.username]==='assente';});
+  var inForse    = called.filter(function(u){return dp[u.username]==='in-forse';});
+  var noResp     = called.filter(function(u){return !dp[u.username];});
+  var pct        = called.length?Math.round(presenti.length/called.length*100):0;
+
+  // Stats bar
+  document.getElementById('resStatsEl').innerHTML=
+    '<div class="res-stat"><div class="res-stat-num" style="color:var(--calendar)">'+called.length+'</div><div class="res-stat-label">Chiamati</div></div>'
+   +'<div class="res-stat"><div class="res-stat-num" style="color:var(--green)">'+presenti.length+'</div><div class="res-stat-label">Presenti</div></div>'
+   +'<div class="res-stat"><div class="res-stat-num" style="color:var(--red)">'+assenti.length+'</div><div class="res-stat-label">Assenti</div></div>'
+   +'<div class="res-stat"><div class="res-stat-num" style="color:var(--amber)">'+inForse.length+'</div><div class="res-stat-label">In forse</div></div>'
+   +'<div class="res-stat"><div class="res-stat-num" style="color:var(--dimtext)">'+noResp.length+'</div><div class="res-stat-label">N/R</div></div>'
+   +'<div class="res-stat"><div class="res-stat-num" style="color:var(--calendar)">'+pct+'%</div><div class="res-stat-label">Risposta</div></div>';
+
+  function memberRow(u, stato, called){
+    var av=u.nome.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+    var badges={presente:'✓ Presente','in-forse':'? In forse',assente:'✕ Assente',nd:'— N/R','not-called':'Non chiamato'};
+    var cls=called?stato:'not-called';
+    var label=called?(badges[stato]||badges.nd):badges['not-called'];
+    return '<div class="res-member-row '+cls+'">'
+      +'<div class="res-av '+cls+'">'+av+'</div>'
+      +'<div class="res-name">'+esc(u.nome)+'</div>'
+      +'<span class="res-badge '+cls+'">'+label+'</span>'
+      +'</div>';
+  }
+
+  var body='';
+  if(presenti.length){
+    body+='<div class="res-section-title">✓ Presenti ('+presenti.length+')</div>';
+    body+=presenti.map(function(u){return memberRow(u,'presente',true);}).join('');
+  }
+  if(inForse.length){
+    body+='<div class="res-section-title">? In forse ('+inForse.length+')</div>';
+    body+=inForse.map(function(u){return memberRow(u,'in-forse',true);}).join('');
+  }
+  if(assenti.length){
+    body+='<div class="res-section-title">✕ Assenti ('+assenti.length+')</div>';
+    body+=assenti.map(function(u){return memberRow(u,'assente',true);}).join('');
+  }
+  if(noResp.length){
+    body+='<div class="res-section-title">— Non hanno risposto ('+noResp.length+')</div>';
+    body+=noResp.map(function(u){return memberRow(u,'nd',true);}).join('');
+  }
+  if(notCalled.length){
+    body+='<div class="res-section-title" style="margin-top:1.2rem;padding-top:0.8rem;border-top:1px solid var(--border)">Non chiamati ('+notCalled.length+')</div>';
+    body+=notCalled.map(function(u){return memberRow(u,'nd',false);}).join('');
+  }
+  document.getElementById('resBodyEl').innerHTML=body;
+  document.getElementById('resocontoModal').classList.remove('hidden');
+}
+function closeResocontoModal(){
+  document.getElementById('resocontoModal').classList.add('hidden');
+}
+
+
+// ══════ CACHET DETTAGLIO ══════
+var _cachetShowId = null;
+
+function openCachetModal(sid){
+  _cachetShowId = sid;
+  var show = SHOWS[sid];
+  document.getElementById('cachetModalTitle').innerHTML =
+    '<span style="color:'+show.color+'">'+esc(show.label)+'</span> &mdash; Dettaglio Cachet';
+  document.getElementById('cachetHidePast').checked = false;
+  renderCachetModal();
+  document.getElementById('cachetModal').classList.remove('hidden');
+}
+
+function closeCachetModal(){
+  document.getElementById('cachetModal').classList.add('hidden');
+}
+
+function renderCachetModal(){
+  if(!_cachetShowId||!currentUser) return;
+  var sid=_cachetShowId;
+  var show=SHOWS[sid];
+  var tariffa=getMyTariffa();
+  var hidePast=document.getElementById('cachetHidePast')&&document.getElementById('cachetHidePast').checked;
+  var today=todayISO();
+  var body=document.getElementById('cachetBody');
+  if(!body) return;
+
+  // Find days where user is present (on any replica of that day)
+  var allDates=state.date[sid]||[];
+  // Group all dates by day
+  var datesByDay={};
+  allDates.forEach(function(d){
+    if(!datesByDay[d.data]) datesByDay[d.data]=[];
+    datesByDay[d.data].push(d);
+  });
+  // Sort each day's dates by ora
+  Object.keys(datesByDay).forEach(function(day){
+    datesByDay[day].sort(function(a,b){return (a.ora||'').localeCompare(b.ora||'');});
+  });
+
+  // Find days where user is confirmed present
+  var confirmedDays=[];
+  Object.keys(datesByDay).forEach(function(day){
+    if(hidePast&&day<today) return;
+    var datesOnDay=datesByDay[day];
+    var userPresent=datesOnDay.some(function(d){
+      var rdList=(state.rdsel&&state.rdsel[d.id])||[];
+      if(rdList.indexOf(currentUser.id)===-1) return false;
+      var dp=(state.dispon&&state.dispon[d.id])||{};
+      return dp[currentUser.username]==='presente';
+    });
+    if(userPresent) confirmedDays.push(day);
+  });
+  confirmedDays.sort();
+
+  if(!confirmedDays.length){
+    body.innerHTML='<div class="empty">Nessuna data confermata'+(hidePast?' (escluse le passate)':'')+'.</div>';
+    return;
+  }
+
+  var totalEuro=0;
+  var rowsHtml='';
+  confirmedDays.forEach(function(day){
+    var datesOnDay=datesByDay[day];
+    var isPastDay=day<today;
+    datesOnDay.forEach(function(d,idx){
+      var pct=idx===0?1:0.7;
+      var amount=tariffa*pct;
+      totalEuro+=amount;
+      var loc=state.location[d.id]||{};
+      var citta=d.citta||loc.citta||'';
+      var dt=parseDate(d.data);
+      var dateStr=dt.getDate()+' '+MESI[dt.getMonth()];
+      rowsHtml+='<div class="cachet-row'+(isPastDay?' past':'')+'">'
+        +'<div class="cachet-row-date">'+dateStr+(d.ora?' '+d.ora:'')+'</div>'
+        +'<div class="cachet-row-info">'+esc(citta||'—')+'</div>'
+        +'<div class="cachet-row-pct">'+(pct===1?'100%':'70%')+'</div>'
+        +'<div class="cachet-row-amount" style="color:'+show.color+'">'+formatEuro(amount)+'</div>'
+        +'</div>';
+    });
+  });
+
+  rowsHtml+='<div class="cachet-total">'
+    +'<div class="cachet-total-label">Totale stimato</div>'
+    +'<div class="cachet-total-num" style="color:'+show.color+'">'+formatEuro(totalEuro)+'</div>'
+    +'</div>';
+  body.innerHTML=rowsHtml;
+}
 
 // ══════ INIT ══════
-loadTheme();
-try {
-  load();
-  ensureDefaultAdmin();
-  seedDates();
-  save();
-} catch(e){ console.warn('Init error:', e); }
-buildBottomNav();
-document.getElementById('loginOverlay').classList.remove('hidden');</script>
+window.addEventListener('DOMContentLoaded', function(){
+  loadTheme();
+  try {
+    load();
+    ensureDefaultAdmin();
+    seedDates();
+    save();
+  } catch(e){ console.warn('Init error:', e); }
+  buildBottomNav();
+  // Show login overlay
+  var overlay = document.getElementById('loginOverlay');
+  if(overlay) overlay.classList.remove('hidden');
+  // Bottom nav: padding handled by CSS
+});
+</script>
 </body>
 </html>
