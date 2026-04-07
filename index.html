@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GESTIONE SPETTACOLI — Musical SRLS</title>
+<title>myproduction PRO — Gestione Spettacoli</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -36,7 +36,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 
 /* ── HEADER ── */
 header {
-  padding: 2rem 2.5rem 1.6rem;
+  padding: 2.2rem 2.5rem 2rem;
   border-bottom: 1px solid var(--border);
   display: flex; align-items: flex-end; justify-content: space-between;
   gap: 2rem; flex-wrap: wrap; position: relative; overflow: hidden;
@@ -491,7 +491,7 @@ a.list-cell-venue:hover { color: var(--white); }
 #loginOverlay.hidden{display:none}
 .login-box{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:2.5rem 2.5rem 2rem;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,0.5)}
 .login-logo{font-size:1.8rem;font-weight:800;color:var(--white);margin-bottom:0.2rem}
-.login-sub{font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--dimtext);margin-bottom:2rem}
+.login-sub{font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--dimtext);margin-bottom:2rem;text-align:center;display:block}
 .login-field{display:flex;flex-direction:column;gap:0.3rem;margin-bottom:1rem}
 .login-field label{font-family:'JetBrains Mono',monospace;font-size:0.55rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--dimtext)}
 .login-field input{background:var(--surface2);border:1px solid var(--border);color:var(--white);font-family:'Outfit',sans-serif;font-size:0.95rem;padding:0.6rem 0.85rem;border-radius:8px;outline:none;width:100%;transition:border-color 0.15s}
@@ -1163,6 +1163,11 @@ a.list-cell-venue:hover { color: var(--white); }
 .cachet-total-num { font-size:1.4rem; font-weight:800; }
 @media(max-width:768px){ .cachet-box{border-radius:16px 16px 0 0;max-width:100%;} #cachetModal{align-items:flex-end;} }
 .user-role-badge.performer { background:rgba(78,201,240,0.12); border-color:rgba(78,201,240,0.4); color:#4ec9f0; }
+
+@media (max-width: 768px) {
+  .mp-logo-text { font-size: 1.1rem !important; }
+  .mp-logo-sub  { font-size: 0.44rem !important; }
+}
 </style>
 </head>
 <body>
@@ -1216,8 +1221,15 @@ a.list-cell-venue:hover { color: var(--white); }
 <!-- LOGIN OVERLAY -->
 <div id="loginOverlay" class="hidden">
   <div class="login-box">
-    <div class="login-logo">GESTIONE SPETTACOLI</div>
-    <div class="login-sub">Musical SRLS</div>
+    <div class="login-logo" style="text-align:center;margin-bottom:0.8rem">
+      <div class="mp-logo" style="align-items:center">
+        <div class="mp-logo-text" style="font-size:2.8rem">
+          <span class="mp-logo-my">my</span><span class="mp-logo-prod">production</span>
+        </div>
+        <div style="font-size:0.9rem;font-weight:700;letter-spacing:0.35em;color:var(--calendar);margin-top:-2px;text-align:center">PRO</div>
+      </div>
+    </div>
+    <div class="login-sub">Gestione Spettacoli</div>
     <div class="login-field"><label>Username</label><input type="text" id="loginUser" placeholder="username" autocomplete="username"></div>
     <div class="login-field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <button class="login-btn" onclick="doLogin()">Accedi</button>
@@ -1288,8 +1300,13 @@ a.list-cell-venue:hover { color: var(--white); }
 <!-- HEADER -->
 <header>
   <div class="logo-wrap">
-    <div class="logo">GESTIONE SPETTACOLI</div>
-    <div class="logo-sub">Musical SRLS</div>
+    <div class="mp-logo">
+      <div class="mp-logo-text" style="font-size:2rem">
+        <span class="mp-logo-my">my</span><span class="mp-logo-prod">production</span><span class="mp-logo-pro">PRO</span>
+      </div>
+      <div class="mp-logo-sub" style="font-size:0.58rem">Gestione Spettacoli &mdash; Musical SRLS</div>
+    </div>
+  </div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
     <div class="current-user-bar" id="currentUserBar" style="display:none">
@@ -2557,7 +2574,7 @@ function buildBottomNav(){
     {id:'i80',          label:"I Love '80",  color:'#4ec9f0'},
     {id:'finanze',      label:'Finanze',     color:'#34d399'},
     {id:'impostazioni', label:'Impostazioni',color:'#a0a0c0'},
-    {id:'persone',      label:'Membri',     color:'var(--calendar)', adminOnly:true},
+    {id:'membri',       label:'Membri',     color:'var(--calendar)', adminOnly:true},
   ];
   inner.innerHTML=items.map(function(item){
     if(item.adminOnly && (!currentUser||currentUser.role!=='admin')) return '';
