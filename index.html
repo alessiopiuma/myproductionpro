@@ -2,6 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>myproduction PRO — Gestione Spettacoli</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1455,6 +1456,76 @@ a.list-cell-venue:hover { color: var(--white); }
 </div>
 
 <script defer>
+// ══════ SUPABASE ══════
+var _SB = null;
+function getSB(){
+  if(_SB) return _SB;
+  try{ _SB = window.supabase.createClient(
+    'https://wyiapgagbfkltakcepsr.supabase.co',
+    'sb_publishable_kQkve7P4kbRuxRgLTwZ1mQ_lw74lgNM'
+  ); }catch(e){ console.warn('Supabase init failed',e); }
+  return _SB;
+}
+async function sbGet(key){
+  var sb=getSB(); if(!sb) return null;
+  try{
+    var r=await sb.from('ms_state').select('value').eq('key',key).maybeSingle();
+    return r&&r.data?r.data.value:null;
+  }catch(e){ return null; }
+}
+async function sbSet(key,val){
+  var sb=getSB(); if(!sb) return;
+  try{ await sb.from('ms_state').upsert({key:key,value:val,updated_at:new Date().toISOString()},{onConflict:'key'}); }
+  catch(e){ console.warn('sbSet error',e); }
+}
+async function sbGetUsers(){
+  var sb=getSB(); if(!sb) return null;
+  try{
+    var r=await sb.from('ms_users').select('*');
+    return r&&r.data&&r.data.length?r.data:null;
+  }catch(e){ return null; }
+}
+async function sbSaveUsers(users){
+  var sb=getSB(); if(!sb) return;
+  try{
+    await sb.from('ms_users').delete().neq('id','__never__');
+    if(users&&users.length){
+      await sb.from('ms_users').insert(users.map(function(u){
+        return {id:u.id,nome:u.nome,username:u.username,
+                pass_hash:u.passHash,role:u.role||'user',sesso:u.sesso||null};
+      }));
+    }
+  }catch(e){ console.warn('sbSaveUsers error',e); }
+}
+var _syncT=null;
+function scheduleSync(){
+  if(_syncT) clearTimeout(_syncT);
+  _syncT=setTimeout(doSync,2000);
+}
+async function doSync(){
+  try{
+    await sbSet('main_state',state);
+    await sbSaveUsers(loadUsers()||[]);
+  }catch(e){ console.warn('doSync error',e); }
+}
+async function loadFromCloud(){
+  var ok=false;
+  try{
+    var cs=await sbGet('main_state');
+    if(cs){ state=cs; localStorage.setItem('msrls_v5',JSON.stringify(state)); ok=true; }
+    var cu=await sbGetUsers();
+    if(cu){
+      saveUsers(cu.map(function(u){
+        return {id:u.id,nome:u.nome,username:u.username,
+                passHash:u.pass_hash,role:u.role,sesso:u.sesso};
+      }));
+      ok=true;
+    }
+  }catch(e){ console.warn('loadFromCloud error',e); }
+  return ok;
+}
+
+
 // ══════ CONFIG ══════
 const PERFORMER_TARIFFE = {
   kpop:    280,
@@ -1497,7 +1568,7 @@ const PARTECIPANTI = [
 let state = { date:{}, cast:{}, location:{}, presenze:{} };
 Object.keys(SHOWS).forEach(k=>{ state.date[k]=[]; state.cast[k]=[]; });
 
-function save(){ localStorage.setItem("msrls_v5", JSON.stringify(state)); }
+function save(){ localStorage.setItem("msrls_v5",JSON.stringify(state)); scheduleSync(); }
 function load(){
   try{
     // try v5 first
@@ -2146,7 +2217,7 @@ function hashPass(str){
   return ((h1>>>0).toString(16).padStart(8,'0'))+((h2>>>0).toString(16).padStart(8,'0'));
 }
 function loadUsers(){ var r=localStorage.getItem('msrls_users'); if(r){try{return JSON.parse(r);}catch(e){}} return null; }
-function saveUsers(u){ localStorage.setItem('msrls_users',JSON.stringify(u)); }
+function saveUsers(u){ localStorage.setItem('msrls_users',JSON.stringify(u)); scheduleSync(); }
 function ensureDefaultAdmin(){
   var users=loadUsers();
   if(!users){
@@ -2574,7 +2645,7 @@ function buildBottomNav(){
     {id:'i80',          label:"I Love '80",  color:'#4ec9f0'},
     {id:'finanze',      label:'Finanze',     color:'#34d399'},
     {id:'impostazioni', label:'Impostazioni',color:'#a0a0c0'},
-    {id:'membri',       label:'Membri',     color:'var(--calendar)', adminOnly:true},
+    {id:'persone',      label:'Membri',     color:'var(--calendar)', adminOnly:true},
   ];
   inner.innerHTML=items.map(function(item){
     if(item.adminOnly && (!currentUser||currentUser.role!=='admin')) return '';
@@ -2975,9 +3046,12 @@ window.addEventListener('DOMContentLoaded', function(){
     save();
   } catch(e){ console.warn('Init error:', e); }
   buildBottomNav();
-  // Show login overlay
   var overlay = document.getElementById('loginOverlay');
   if(overlay) overlay.classList.remove('hidden');
+  // Load from Supabase (async - refreshes UI when done)
+  loadFromCloud().then(function(ok){
+    if(ok && currentUser){ buildBottomNav(); showView('calendar'); }
+  });
   // Bottom nav: padding handled by CSS
 });
 </script>
