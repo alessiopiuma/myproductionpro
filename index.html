@@ -2,6 +2,12 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="myproductionPRO">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0d14">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230d0d14'/%3E%3Ctext y='72' x='50' text-anchor='middle' font-size='62' font-family='Arial Black,sans-serif' fill='%23a97dfa'%3EP%3C/text%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>myproduction PRO — Gestione Spettacoli</title>
@@ -517,13 +523,24 @@ a.list-cell-venue:hover { color: var(--white); }
 .user-row{display:flex;align-items:center;gap:0.8rem;padding:0.7rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;transition:border-color 0.15s;flex-wrap:wrap}
 .user-row:hover{border-color:var(--border2)}
 .user-avatar{width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--dimtext);flex-shrink:0}
-.user-avatar.admin{background:rgba(169,125,250,0.15);border-color:var(--calendar);color:var(--calendar)}
+.user-avatar.admin         { background:rgba(232,0,13,0.15);   border-color:#e8000d; color:#e8000d; }
+.user-avatar.choreographer { background:rgba(249,115,22,0.15);  border-color:#f97316; color:#f97316; }
+.user-avatar.performer     { background:rgba(245,158,11,0.15);  border-color:#f59e0b; color:#f59e0b; }
+.user-avatar.dancer        { background:rgba(14,165,233,0.15);  border-color:#0ea5e9; color:#0ea5e9; }
+.user-avatar.staff         { background:rgba(16,185,129,0.15);  border-color:#10b981; color:#10b981; }
+.user-avatar.guest         { background:rgba(107,114,128,0.15); border-color:#6b7280; color:#6b7280; }
 .user-info{flex:1;min-width:0}
 .user-name{font-size:0.88rem;font-weight:600;color:var(--white)}
 .user-username{font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--dimtext)}
 .user-role-badge{font-family:'JetBrains Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.2rem 0.6rem;border-radius:100px;border:1px solid}
-.user-role-badge.admin{background:rgba(169,125,250,0.12);border-color:rgba(169,125,250,0.4);color:var(--calendar)}
-.user-role-badge.user{background:rgba(120,120,160,0.1);border-color:var(--border2);color:var(--dimtext)}
+.user-role-badge.admin        { background:rgba(232,0,13,0.12);   border-color:rgba(232,0,13,0.5);   color:#e8000d; }
+.user-role-badge.choreographer{ background:rgba(249,115,22,0.12);  border-color:rgba(249,115,22,0.5); color:#f97316; }
+.user-role-badge.performer    { background:rgba(245,158,11,0.12);  border-color:rgba(245,158,11,0.5); color:#f59e0b; }
+.user-role-badge.dancer       { background:rgba(14,165,233,0.12);  border-color:rgba(14,165,233,0.5); color:#0ea5e9; }
+.user-role-badge.staff        { background:rgba(16,185,129,0.12);  border-color:rgba(16,185,129,0.5); color:#10b981; }
+.user-role-badge.guest        { background:rgba(107,114,128,0.12); border-color:rgba(107,114,128,0.5);color:#6b7280; }
+.user-avatar.guitarist     { background:rgba(139,92,246,0.15);  border-color:#8b5cf6; color:#8b5cf6; }
+.user-role-badge.guitarist { background:rgba(139,92,246,0.12);  border-color:rgba(139,92,246,0.5); color:#8b5cf6; }
 .add-user-form{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:1.2rem;margin-top:1.2rem}
 /* ── RD MODAL ── */
 #rdModal{position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem}
@@ -616,7 +633,32 @@ a.list-cell-venue:hover { color: var(--white); }
   .miedate-stats { gap: 0.8rem !important; }
 }
 
-/* ── FINANZE ── */
+/* ── TRAVEL INFO ── */
+.travel-display { display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.6rem; }
+.travel-chip {
+  font-size:0.72rem; padding:0.2rem 0.6rem; border-radius:6px;
+  background:var(--surface2); border:1px solid var(--border2); color:var(--text);
+}
+.travel-admin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.8rem; margin-top:0.8rem; }
+@media(max-width:750px){ .travel-admin-grid { grid-template-columns:1fr; } }
+.travel-admin-section { background:var(--surface2); border-radius:8px; padding:0.7rem 0.8rem; border:1px solid var(--border); }
+.travel-sub-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; margin-top:0.4rem; }
+@media(max-width:750px){ .travel-sub-grid { grid-template-columns:1fr; } }
+/* Clickable time/ticket link */
+.time-ticket-link {
+  color:var(--calendar); text-decoration:none; border-bottom:1px dashed currentColor;
+  transition:color 0.15s; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:0.78rem;
+}
+.time-ticket-link:hover { color:var(--white); }
+/* Mobile user-row fix */
+@media(max-width:768px){
+  .user-row { gap:0.4rem !important; padding:0.6rem 0.7rem !important; }
+  .user-name { font-size:0.8rem !important; }
+  .user-username { font-size:0.55rem !important; }
+  .user-role-badge { font-size:0.5rem !important; padding:0.15rem 0.4rem !important; }
+  .sesso-badge { font-size:0.55rem !important; padding:0.1rem 0.35rem !important; }
+  .btn-sm { font-size:0.65rem !important; padding:0.25rem 0.5rem !important; }
+}
 .finanze-wrap { display:flex; flex-direction:column; gap:1.5rem; max-width:680px; }
 .finanze-tariffa-box {
   background:var(--surface); border:1px solid var(--border2);
@@ -1207,7 +1249,7 @@ a.list-cell-venue:hover { color: var(--white); }
   .res-stat-num { font-size:1.3rem; }
 }
 
-.user-role-badge.semi-admin { background:rgba(251,191,36,0.12); border-color:rgba(251,191,36,0.4); color:var(--amber); }
+.user-role-badge.choreographer { background:rgba(249,115,22,0.12); border-color:rgba(249,115,22,0.5); color:#f97316; }
 
 /* ── FINANZE 70% BOX ── */
 .finanze-70-box {
@@ -1618,6 +1660,17 @@ a.list-cell-venue:hover { color: var(--white); }
   </div>
 </div>
 <!-- RD MODAL -->
+<!-- LOCANDINA MODAL -->
+<div id="locandinaModal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.92);display:none;flex-direction:column;align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeLocandina()">
+  <button onclick="closeLocandina()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:rgba(255,255,255,0.7);font-size:1.8rem;cursor:pointer;z-index:1">&#10005;</button>
+  <img id="locandinaImg" src="" alt="Locandina" style="max-width:min(90vw,500px);max-height:70vh;border-radius:10px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+  <div style="display:flex;gap:1rem;margin-top:1.2rem;background:rgba(255,255,255,0.08);border-radius:12px;padding:0.7rem 1.5rem">
+    <button onclick="locandinaShare()" style="background:none;border:none;color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.4rem;padding:0.4rem 0.8rem;border-radius:8px;transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">📤 Condividi</button>
+    <div style="width:1px;background:rgba(255,255,255,0.2)"></div>
+    <button onclick="locandinaSave()" style="background:none;border:none;color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.4rem;padding:0.4rem 0.8rem;border-radius:8px;transition:background 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">💾 Salva</button>
+  </div>
+</div>
+
 <div id="rdModal" class="hidden">
   <div class="rd-box">
     <div class="rd-header">
@@ -1647,7 +1700,8 @@ a.list-cell-venue:hover { color: var(--white); }
       <div class="fg"><label>Username *</label><input type="text" id="eu-user"></div>
       <div class="fg"><label>Nuova Password</label><input type="password" id="eu-pass" placeholder="Lascia vuoto = invariata"></div>
       <div class="fg"><label>Sesso</label><select id="eu-sesso"><option value="m">&#9794; Uomo</option><option value="f">&#9792; Donna</option></select></div>
-      <div class="fg"><label>Ruolo</label><select id="eu-role"><option value="user">Utente</option><option value="semi-admin">Semi-Admin</option><option value="performer">Performer</option><option value="admin">Admin</option></select></div>
+      <div class="fg"><label>Ruolo</label><select id="eu-role"><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="performer">Performer</option><option value="choreographer">Choreographer</option><option value="guest">Guest</option><option value="admin">Admin</option></select></div>
+      <div class="fg"><label>Badge visivo (opzionale)</label><select id="eu-displayRole"><option value="">— Uguale al ruolo —</option><option value="performer">Performer</option><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="choreographer">Choreographer</option></select></div>
     </div>
     <input type="hidden" id="eu-id">
     <div class="modal-actions">
@@ -1783,7 +1837,8 @@ a.list-cell-venue:hover { color: var(--white); }
           <div class="fg"><label>Username *</label><input type="text" id="u-user" placeholder="mario.rossi"></div>
           <div class="fg"><label>Password *</label><input type="password" id="u-pass" placeholder="••••••••"></div>
           <div class="fg"><label>Sesso</label><select id="u-sesso"><option value="m">&#9794; Uomo</option><option value="f">&#9792; Donna</option></select></div>
-          <div class="fg"><label>Ruolo</label><select id="u-role"><option value="user">Utente</option><option value="semi-admin">Semi-Admin</option><option value="performer">Performer</option><option value="admin">Admin</option></select></div>
+          <div class="fg"><label>Ruolo</label><select id="u-role"><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="performer">Performer</option><option value="choreographer">Choreographer</option><option value="guest">Guest</option><option value="admin">Admin</option></select></div>
+          <div class="fg"><label>Badge visivo (opzionale)</label><select id="u-displayRole"><option value="">— Uguale al ruolo —</option><option value="performer">Performer</option><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="choreographer">Choreographer</option></select></div>
         </div>
         <div class="form-actions">
           <button class="btn btn-ghost btn-sm" onclick="toggleAddUserForm()">Annulla</button>
@@ -1980,6 +2035,18 @@ function load(){
   if(!state.presenze)state.presenze={};
   if(!state.dispon)state.dispon={};
   if(!state.rdsel)state.rdsel={};
+  // Migrate legacy roles
+  try{
+    var us=loadUsers();
+    if(us){
+      var changed=false;
+      us.forEach(function(u){
+        if(u.role==='semi-admin'){ u.role='choreographer'; changed=true; }
+        if(u.role==='user'){ u.role='dancer'; changed=true; }
+      });
+      if(changed) saveUsers(us);
+    }
+  }catch(e){}
 }
 
 // ══════ UTILS ══════
@@ -2029,7 +2096,11 @@ function renderMonthGroups(dateEntries, showId){
   Object.keys(byMonth).forEach(function(mk){
     var evs=byMonth[mk]; var parts=mk.split("-"),y=parts[0],m=parts[1];
     var bds={};
-    evs.forEach(function(ev){ var k=ev.d.data+"||"+(ev.sid||showId); if(!bds[k])bds[k]={primary:ev,extras:[]}; else bds[k].extras.push(ev.d.ora); });
+    evs.forEach(function(ev){
+      var k=ev.d.data+"||"+(ev.sid||showId);
+      if(!bds[k]) bds[k]={primary:ev,extras:[]};
+      else bds[k].extras.push({ora:ev.d.ora, id:ev.d.id, loc:ev.loc||state.location[ev.d.id]||{}});
+    });
     var groups=Object.values(bds);
     html+='<div class="month-group"><div class="month-heading"><div class="month-heading-name">'+MESI[parseInt(m)-1]+" "+y+'</div><div class="month-heading-spacer"></div><div class="month-heading-count">'+groups.length+' date</div></div>';
     groups.forEach(function(g){ html+=renderDateItem(g.primary.d,g.primary.sid||showId,g.primary.loc,g.extras); });
@@ -2042,10 +2113,11 @@ function renderMonthGroups(dateEntries, showId){
 function canManageShow(showId){
   if(!currentUser) return false;
   if(currentUser.role==='admin') return true;
-  if(currentUser.role==='semi-admin') return showId==='freddie'||showId==='i80';
+  if(currentUser.role==='choreographer') return true;
   return false;
 }
-function isAdminLike(){ return currentUser&&(currentUser.role==='admin'||currentUser.role==='semi-admin'); }
+function isAdminLike(){ return currentUser&&(currentUser.role==='admin'||currentUser.role==='choreographer'); }
+function isGuest(){ return currentUser&&currentUser.role==='guest'; }
 
 function renderDateItem(d, showId, loc, extraTimes){
   var dt=parseDate(d.data);
@@ -2055,20 +2127,38 @@ function renderDateItem(d, showId, loc, extraTimes){
   var citta=d.citta||(loc&&loc.citta)||"";
   var teatro=(loc&&loc.nome)||"";
   var url=mapsUrl(teatro,citta);
-  var allTimes=[d.ora].concat(extraTimes||[]).filter(Boolean);
+
+  // Build allReplicas: primary first, then extras — each with {ora, id, loc}
+  var allReplicas=[{ora:d.ora, id:d.id, loc:loc||state.location[d.id]||{}}];
+  (extraTimes||[]).forEach(function(e){
+    if(typeof e === 'object' && e.id) allReplicas.push(e);
+    else if(typeof e === 'string') allReplicas.push({ora:e, id:d.id, loc:loc||{}});
+  });
+  allReplicas=allReplicas.filter(function(r){ return r.ora; });
+
   var pastChip=isPast?' <span class="past-chip">&#10003;</span>':"";
   var pendingChip="";
 
   var cells="";
   if(citta) cells+='<div class="date-cell date-cell-city">'+esc(citta)+'</div>';
   if(teatro) cells+=url?'<a class="date-cell date-cell-venue" href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(teatro)+'</a>':'<div class="date-cell date-cell-venue">'+esc(teatro)+'</div>';
-  if(allTimes.length) cells+='<div class="date-cell date-cell-time">'+allTimes.join(" &middot; ")+'</div>';
+  // Time cells — each clickable with its own TicketOne link
+  if(allReplicas.length){
+    var timeCells=allReplicas.map(function(r){
+      var tUrl=(r.loc&&r.loc.ticketone)||'';
+      return tUrl
+        ?'<a class="time-ticket-link" href="'+esc(tUrl)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Acquista biglietti">'+esc(r.ora)+' &#127915;</a>'
+        :'<span>'+esc(r.ora)+'</span>';
+    }).join(' &middot; ');
+    cells+='<div class="date-cell date-cell-time">'+timeCells+'</div>';
+  }
 
   if(!state.dispon) state.dispon={};
   if(!state.dispon[d.id]) state.dispon[d.id]={};
   if(!state.rdsel) state.rdsel={};
   var myDispon="";
-  if(currentUser){
+  var _isGuest=currentUser&&currentUser.role==='guest';
+  if(currentUser && !_isGuest){
     var rdList=state.rdsel[d.id]||[];
     var isSel=rdList.indexOf(currentUser.id)!==-1;
     var mc=state.dispon[d.id][currentUser.username]||"";
@@ -2083,18 +2173,89 @@ function renderDateItem(d, showId, loc, extraTimes){
     }
   }
 
+  var _canAdmin = currentUser&&(currentUser.role==='admin'||currentUser.role==='choreographer');
+
+  var MEZZO_ICONS={'Furgone':'🚐 Furgone','Aereo':'✈️ Aereo','Nave':'🚢 Nave'};
+  // Travel info (read-only display for non-admin)
+  var travelDisplay='';
+  if(loc){
+    var tparts=[];
+    if(loc.partenza_mezzo||loc.partenza_luogo||loc.partenza_dt){
+      var mezzoLabel=MEZZO_ICONS[loc.partenza_mezzo]||('🚐 '+(loc.partenza_mezzo||'Furgone'));
+      tparts.push('<span class="travel-chip">'+mezzoLabel+' <strong>Partenza</strong>'+(loc.partenza_luogo?' · '+esc(loc.partenza_luogo):'')+( loc.partenza_dt?' · '+esc(loc.partenza_dt):'' )+'</span>');
+    }
+    if(loc.pernottamento==='si') tparts.push('<span class="travel-chip">🏨 Pernottamento</span>');
+    if(loc.rientro_mezzo||loc.rientro_luogo||loc.rientro_dt){
+      var rLabel=MEZZO_ICONS[loc.rientro_mezzo]||('🚐 '+(loc.rientro_mezzo||'Furgone'));
+      tparts.push('<span class="travel-chip">'+rLabel+' <strong>Rientro</strong>'+(loc.rientro_luogo?' · '+esc(loc.rientro_luogo):'')+( loc.rientro_dt?' · '+esc(loc.rientro_dt):'' )+'</span>');
+    }
+    if(tparts.length) travelDisplay='<div class="travel-display">'+tparts.join('')+'</div>';
+  }
+
+  // Location panel (admin/choreographer editable)
+  // One TicketOne field per replica
+  var ticketFields=allReplicas.map(function(r){
+    var rLoc=state.location[r.id]||{};
+    var label=r.ora?'&#127915; TicketOne '+esc(r.ora):'&#127915; Link TicketOne';
+    return '<div class="lf"><label>'+label+'</label><input type="url" value="'+esc(rLoc.ticketone||'')+'" placeholder="https://www.ticketone.it/..." oninput="saveLoc(\''+r.id+'\',\'ticketone\',this.value)"></div>';
+  }).join('');
+
   var locPanel='<div class="loc-fields">'
     +'<div class="lf"><label>Nome Teatro</label><input type="text" value="'+esc(teatro)+'" placeholder="Es. Teatro Regio" oninput="saveLoc(\''+d.id+'\',\'nome\',this.value)"></div>'
     +'<div class="lf"><label>Citt&agrave;</label><input type="text" value="'+esc(citta)+'" placeholder="Es. Milano" oninput="saveLoc(\''+d.id+'\',\'citta\',this.value);syncCitta(\''+d.id+'\',\''+showId+'\',this.value)"></div>'
-    +'<div class="lf"><label>&#127915; Link TicketOne</label><input type="url" value="'+esc(loc.ticketone||'')+'" placeholder="https://www.ticketone.it/..." oninput="saveLoc(\''+d.id+'\',\'ticketone\',this.value)"></div>'
+    +ticketFields
     +'</div>';
-  var locSection=(currentUser&&currentUser.role==="admin")
-    ?'<div class="sec-label">Location</div>'+locPanel
-    :'<div class="sec-label">Location</div><div style="font-size:0.88rem;color:var(--text)">'+(teatro?'<strong>'+esc(teatro)+'</strong>':'')+((teatro&&citta)?' &mdash; ':'')+esc(citta)+'</div>';
-  var rdSection=(currentUser&&currentUser.role==="admin")
+
+  // Travel admin panel — clear mezzo labels
+  var MEZZI=[{v:'Furgone',icon:'🚐'},{v:'Aereo',icon:'✈️'},{v:'Nave',icon:'🚢'}];
+  var travelPanel='<div class="travel-admin-grid">'
+    // Partenza
+    +'<div class="travel-admin-section"><div class="sec-label">✈️ Partenza</div><div class="travel-sub-grid">'
+    +'<div class="lf"><label>Mezzo</label><select onchange="saveLoc(\''+d.id+'\',\'partenza_mezzo\',this.value)">'
+    +MEZZI.map(function(m){return '<option value="'+m.v+'"'+(((loc&&loc.partenza_mezzo)||'Furgone')===m.v?' selected':'')+'>'+m.icon+' '+m.v+'</option>';}).join('')
+    +'</select></div>'
+    +'<div class="lf"><label>Luogo</label><input type="text" value="'+esc((loc&&loc.partenza_luogo)||'')+'" placeholder="Es. Catania" oninput="saveLoc(\''+d.id+'\',\'partenza_luogo\',this.value)"></div>'
+    +'<div class="lf"><label>Data / Ora</label><input type="text" value="'+esc((loc&&loc.partenza_dt)||'')+'" placeholder="Es. 08 Mag 09:00" oninput="saveLoc(\''+d.id+'\',\'partenza_dt\',this.value)"></div>'
+    +'</div></div>'
+    // Pernottamento
+    +'<div class="travel-admin-section"><div class="sec-label">🏨 Pernottamento</div>'
+    +'<div class="lf"><select onchange="saveLoc(\''+d.id+'\',\'pernottamento\',this.value)">'
+    +['no','si'].map(function(v){return '<option value="'+v+'"'+((loc&&loc.pernottamento)===v?' selected':'')+'>'+(v==='si'?'Sì':'No')+'</option>';}).join('')
+    +'</select></div></div>'
+    // Rientro
+    +'<div class="travel-admin-section"><div class="sec-label">↩️ Rientro</div><div class="travel-sub-grid">'
+    +'<div class="lf"><label>Mezzo</label><select onchange="saveLoc(\''+d.id+'\',\'rientro_mezzo\',this.value)">'
+    +MEZZI.map(function(m){return '<option value="'+m.v+'"'+(((loc&&loc.rientro_mezzo)||'Furgone')===m.v?' selected':'')+'>'+m.icon+' '+m.v+'</option>';}).join('')
+    +'</select></div>'
+    +'<div class="lf"><label>Luogo</label><input type="text" value="'+esc((loc&&loc.rientro_luogo)||'')+'" placeholder="Es. Catania" oninput="saveLoc(\''+d.id+'\',\'rientro_luogo\',this.value)"></div>'
+    +'<div class="lf"><label>Data / Ora</label><input type="text" value="'+esc((loc&&loc.rientro_dt)||'')+'" placeholder="Es. 09 Mag 23:00" oninput="saveLoc(\''+d.id+'\',\'rientro_dt\',this.value)"></div>'
+    +'</div></div>'
+    +'</div>';
+
+  // Locandina upload (admin only)
+  var locandinaPanel='<div style="margin-top:1rem">'
+    +'<div class="sec-label">🖼 Locandina</div>'
+    +(loc&&loc.locandina
+      ?'<div style="margin:0.5rem 0"><img src="'+loc.locandina+'" style="max-width:160px;max-height:120px;border-radius:6px;border:1px solid var(--border)"></div>'
+        +'<button class="btn btn-ghost btn-sm" style="color:var(--red);margin-bottom:0.4rem" onclick="saveLoc(\''+d.id+'\',\'locandina\',\'\');renderShow(\''+showId+'\')">✕ Rimuovi</button><br>'
+      :'')
+    +'<input type="file" accept="image/*" style="font-size:0.75rem;color:var(--dimtext)" onchange="uploadLocandina(\''+d.id+'\',\''+showId+'\',this)">'
+    +'<div style="font-size:0.62rem;color:var(--dimtext);margin-top:0.3rem">Consigliato: JPG/PNG sotto 500KB</div>'
+    +'</div>';
+
+  var locSection=_canAdmin
+    ?'<div class="sec-label">Location</div>'+locPanel+travelPanel+locandinaPanel
+    :'<div class="sec-label">Location</div><div style="font-size:0.88rem;color:var(--text)">'+(teatro?'<strong>'+esc(teatro)+'</strong>':'')+((teatro&&citta)?' &mdash; ':'')+esc(citta)+'</div>'+travelDisplay;
+
+  var rdSection=_canAdmin
     ?'<div style="margin-top:1.2rem"><div class="sec-label">Richiesta Disponibilit&agrave;</div><button class="btn btn-sm" style="background:rgba(169,125,250,0.12);border:1px solid rgba(169,125,250,0.4);color:var(--calendar)" onclick="openRdModal(\''+d.id+'\',\''+showId+'\')">&#128203; DISP</button></div>'
     :'';
   var detail='<div class="date-detail" id="dd-'+d.id+'"><div style="padding:0">'+locSection+rdSection+'</div></div>';
+
+  // Poster button (visible to all if locandina exists)
+  var posterBtn=(loc&&loc.locandina)
+    ?'<button class="btn btn-ghost btn-sm" style="padding:0.2rem 0.5rem" onclick="event.stopPropagation();openLocandina(\''+d.id+'\')" title="Vedi locandina">🖼</button>'
+    :'';
 
   return '<div class="date-item" id="dc-'+d.id+'">'
     +'<div class="date-item-header" onclick="toggleDetail(\''+d.id+'\',\''+showId+'\')">'
@@ -2105,13 +2266,14 @@ function renderDateItem(d, showId, loc, extraTimes){
     +'<div class="date-cells">'+cells+'</div>'
     +'<div class="date-item-actions">'
     +myDispon
+    +posterBtn
     +'<button class="dispon-panel-btn" onclick="event.stopPropagation();toggleDisponOverview(\''+d.id+'\')" title="Vedi disponibilit&#224; di tutti">&#128101;&#8250;</button>'
     +(canManageShow(showId)?'<button class="dispon-panel-btn" onclick="event.stopPropagation();openRdModal(\''+d.id+'\',\''+showId+'\')" title="Richiesta Disponibilit&#224;">DISP</button>':"")
-    +(currentUser&&currentUser.role==="admin"?'<button class="btn btn-ghost btn-sm" style="padding:0.2rem 0.4rem;color:rgba(248,113,113,0.5)" onclick="event.stopPropagation();eliminaData(\''+showId+'\',\''+d.id+'\')">&#10005;</button>':"")
+    +(_canAdmin?'<button class="btn btn-ghost btn-sm" style="padding:0.2rem 0.4rem;color:rgba(248,113,113,0.5)" onclick="event.stopPropagation();eliminaData(\''+showId+'\',\''+d.id+'\')">&#10005;</button>':"")
     +'<span class="date-chevron" id="chv-'+d.id+'">&#8250;</span>'
     +(canManageShow(showId)?'<button class="res-btn" onclick="event.stopPropagation();openResoconto(\\\'\'+d.id+\'\\\',\\\'\'+showId+\'\\\')">&#128202;</button>':"")
     +'</div></div>'
-    +'<div class="dispon-overview" id="dov-'+d.id+'"><div class="dispon-overview-title">Disponibilit&agrave; &mdash; tutti gli utenti</div><div id="dovList-'+d.id+'"></div></div>'
+    +'<div class="dispon-overview" id="dov-'+d.id+'"><div class="dispon-overview-title">Disponibilit&agrave; &mdash; convocati</div><div id="dovList-'+d.id+'"></div></div>'
     +detail+'</div>';
 }
 
@@ -2127,7 +2289,7 @@ function renderShow(id){
 
   var banner='<div class="show-logo-row"><img class="show-logo-img" src="'+SHOW_IMGS[id]+'" alt="'+esc(show.label)+'"><div class="show-title-block"><div class="page-title" style="color:var(--white)">'+esc(show.label)+'</div></div></div>';
 
-  var isAdmin=currentUser&&currentUser.role==="admin";
+  var isAdmin=currentUser&&(currentUser.role==="admin"||currentUser.role==="choreographer");
   var stats='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem">'
     +'<div class="show-stats-row" style="margin-bottom:0">'
     +'<div class="show-stat"><div class="show-stat-num">'+dates.length+'</div><div class="show-stat-label">Totali</div></div>'
@@ -2210,6 +2372,82 @@ function toggleDetail(dateId, showId){
 function saveLoc(dateId, field, val){
   if(!state.location[dateId]) state.location[dateId]={};
   state.location[dateId][field] = val; save();
+}
+
+function uploadLocandina(dateId, showId, input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement('canvas');
+      var MAX_W=1200, MAX_H=1600;
+      var w=img.width, h=img.height;
+      // Scale down if needed
+      if(w>MAX_W||h>MAX_H){
+        var ratio=Math.min(MAX_W/w, MAX_H/h);
+        w=Math.round(w*ratio); h=Math.round(h*ratio);
+      }
+      canvas.width=w; canvas.height=h;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      // Compress progressively until under 500KB
+      var quality=0.92;
+      var result=canvas.toDataURL('image/jpeg',quality);
+      while(result.length > 666666 && quality > 0.3){ // ~500KB base64
+        quality-=0.08;
+        result=canvas.toDataURL('image/jpeg',quality);
+      }
+      saveLoc(dateId,'locandina',result);
+      toast('Locandina salvata ('+(Math.round(result.length*0.75/1024))+'KB)');
+      renderShow(showId);
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+var _locandinaData='';
+function openLocandina(dateId){
+  var loc=state.location[dateId]||{};
+  if(!loc.locandina) return;
+  _locandinaData=loc.locandina;
+  document.getElementById('locandinaImg').src=_locandinaData;
+  var modal=document.getElementById('locandinaModal');
+  modal.style.display='flex';
+}
+function closeLocandina(){
+  document.getElementById('locandinaModal').style.display='none';
+  document.getElementById('locandinaImg').src='';
+  _locandinaData='';
+}
+function locandinaSave(){
+  if(!_locandinaData) return;
+  var a=document.createElement('a');
+  a.href=_locandinaData;
+  a.download='locandina.jpg';
+  a.click();
+}
+function locandinaShare(){
+  if(!_locandinaData) return;
+  // Use Web Share API on mobile if available
+  if(navigator.share){
+    // Convert base64 to blob for sharing
+    try{
+      var arr=_locandinaData.split(','), mime=arr[0].match(/:(.*?);/)[1];
+      var bstr=atob(arr[1]), n=bstr.length, u8=new Uint8Array(n);
+      for(var i=0;i<n;i++) u8[i]=bstr.charCodeAt(i);
+      var blob=new Blob([u8],{type:mime});
+      var file=new File([blob],'locandina.jpg',{type:mime});
+      navigator.share({files:[file],title:'Locandina'}).catch(function(){});
+    }catch(e){
+      // Fallback: share just the title
+      navigator.share({title:'Locandina spettacolo'}).catch(function(){});
+    }
+  } else {
+    // Desktop fallback: open share options
+    toast('Usa il pulsante Salva e condividi dal tuo dispositivo mobile');
+  }
 }
 function syncCitta(dateId, showId, val){
   const d = state.date[showId].find(x=>x.id===dateId);
@@ -2467,7 +2705,7 @@ function renderCalList(){
       evs.forEach(function(ev){
         var k=ev.d.data+"||"+ev.sid;
         if(!bds[k]) bds[k]={primary:ev,extras:[]};
-        else bds[k].extras.push(ev.d.ora);
+        else bds[k].extras.push({ora:ev.d.ora, id:ev.d.id, loc:ev.loc||state.location[ev.d.id]||{}});
       });
       var groups=Object.values(bds);
       html+='<div class="month-group">'
@@ -2513,10 +2751,25 @@ function renderListRow(g){
   var show=SHOWS[sid], color=show.color;
   var dt=parseDate(d.data);
   var dayNum=dt.getDate(), dayName=GIORNI3[dt.getDay()];
-  var citta=d.citta||loc.citta||"", teatro=loc.nome||"";
+  var citta=d.citta||(loc&&loc.citta)||"", teatro=(loc&&loc.nome)||"";
   var url=mapsUrl(teatro,citta);
   var isPast=d.data<todayISO();
-  var allTimes=[d.ora].concat(g.extras||[]).filter(Boolean);
+
+  // Build replicas list with per-replica TicketOne
+  var allReplicas=[{ora:d.ora, id:d.id, loc:loc||state.location[d.id]||{}}];
+  (g.extras||[]).forEach(function(e){
+    if(typeof e==='object'&&e.id) allReplicas.push(e);
+    else if(typeof e==='string') allReplicas.push({ora:e, id:d.id, loc:loc||{}});
+  });
+  allReplicas=allReplicas.filter(function(r){ return r.ora; });
+
+  function makeTimeCell(r){
+    var tUrl=(r.loc&&r.loc.ticketone)||'';
+    return tUrl
+      ?'<a class="time-ticket-link" href="'+esc(tUrl)+'" target="_blank" rel="noopener" title="Acquista biglietti">'+esc(r.ora)+' &#127915;</a>'
+      :'<span>'+esc(r.ora)+'</span>';
+  }
+  var timesHtml=allReplicas.map(makeTimeCell).join(' &middot; ');
 
   // date block
   var dateBlock='<div class="date-block">'
@@ -2527,22 +2780,22 @@ function renderListRow(g){
     +'<div class="date-block-info">'+(isPast?'<span style="color:var(--green);font-size:1rem">&#10003;</span>':'')+'</div>'
     +'</div>';
 
-  // desktop cells (original layout)
+  // desktop cells
   var desktopCells='<div class="date-cells list-row-desktop">'
     +'<div class="date-cell list-cell-show" style="color:'+color+';font-weight:700">'+esc(show.label)+'</div>'
     +(citta?'<div class="date-cell date-cell-city">'+esc(citta)+'</div>':"")
     +(teatro?(url?'<a class="date-cell date-cell-venue" href="'+esc(url)+'" target="_blank" rel="noopener">'+esc(teatro)+'</a>':'<div class="date-cell date-cell-venue">'+esc(teatro)+'</div>'):"")
-    +(allTimes.length?'<div class="date-cell date-cell-time">'+allTimes.join(' &middot; ')+'</div>':"")
+    +(allReplicas.length?'<div class="date-cell date-cell-time">'+timesHtml+'</div>':"")
     +'</div>';
 
-  // mobile layout: 3 rows
+  // mobile layout
   var mobileCells='<div class="list-row-mobile">'
     +'<div class="lrm-row1">'
     +'<span class="lrm-date-part" style="color:'+color+'">'+dayNum+' '+dayName+'</span>'
     +'<span class="lrm-show-part" style="color:'+color+'">'+esc(show.label)+'</span>'
     +'</div>'
     +((citta||teatro)?'<div class="lrm-row2">'+(citta?esc(citta):'')+(citta&&teatro?' &mdash; ':'')+( teatro?(url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" style="color:var(--dimtext)">'+esc(teatro)+'</a>':esc(teatro)):'' )+'</div>':"")
-    +(allTimes.length?'<div class="lrm-row3">'+allTimes.join(' &middot; ')+'</div>':"")
+    +(allReplicas.length?'<div class="lrm-row3">'+timesHtml+'</div>':"")
     +'</div>';
 
   return '<div class="date-item list-date-item" style="'+(isPast?'opacity:0.75;':'')+'margin-bottom:0.4rem">'
@@ -2693,19 +2946,28 @@ function doLogout(){
 function applySession(){
   if(!currentUser) return;
   var bar=document.getElementById('currentUserBar'); bar.style.display='flex';
-  document.getElementById('currentUserLabel').innerHTML='<strong>'+esc(currentUser.nome)+'</strong>&nbsp;<span style="font-size:0.65rem;background:'+(currentUser.role==='admin'?'rgba(169,125,250,0.15)':'rgba(120,120,160,0.1)')+';border-radius:4px;padding:0.1rem 0.4rem;color:'+(currentUser.role==='admin'?'var(--calendar)':'var(--dimtext)')+'">'+currentUser.role+'</span>';
-  // finanze visible to everyone
-  // finanze always visible in sidebar
-  if(currentUser.role==='admin'){
+  var ROLE_LABELS={admin:'Admin',choreographer:'Choreographer',performer:'Performer',dancer:'Dancer',staff:'Staff',guest:'Guest',user:'Dancer','semi-admin':'Choreographer'};
+  var ROLE_COLORS={admin:'#e8000d',choreographer:'#f97316',performer:'#f59e0b',dancer:'#0ea5e9',staff:'#10b981',guest:'#6b7280',user:'#0ea5e9','semi-admin':'#f97316'};
+  var roleLabel=ROLE_LABELS[currentUser.role]||currentUser.role;
+  var roleColor=ROLE_COLORS[currentUser.role]||'var(--dimtext)';
+  document.getElementById('currentUserLabel').innerHTML='<strong>'+esc(currentUser.nome)+'</strong>&nbsp;<span style="font-size:0.65rem;background:'+roleColor+'22;border-radius:4px;padding:0.1rem 0.4rem;color:'+roleColor+'">'+roleLabel+'</span>';
+
+  // Admin + Choreographer get members nav
+  if(currentUser.role==='admin'||currentUser.role==='choreographer'){
     var _al=document.getElementById('adminNavLabel');
     var _mn=document.getElementById('membriNavItem');
     if(_al) _al.style.display='';
     if(_mn) _mn.style.display='';
   }
-  // semi-admin label in header
-  if(currentUser.role==='semi-admin'){
-    // no extra nav items, behaves like user for navigation
+
+  // Guest: hide strumenti nav items in sidebar
+  if(currentUser.role==='guest'){
+    ['miedate','finanze'].forEach(function(id){
+      var el=document.querySelector('.nav-item[data-show="'+id+'"]');
+      if(el) el.style.display='none';
+    });
   }
+
   updateHeaderStats();
   buildBottomNav();
   showView('calendar');
@@ -2720,10 +2982,13 @@ function saveNewUser(){
   var pass=document.getElementById('u-pass').value;
   var sesso=document.getElementById('u-sesso').value;
   var role=document.getElementById('u-role').value;
+  var displayRole=document.getElementById('u-displayRole').value||'';
   if(!nome||!uname||!pass){ toast('Compila tutti i campi'); return; }
   var users=loadUsers()||[];
   if(users.find(function(u){return u.username===uname;})){ toast('Username già in uso'); return; }
-  users.push({id:uid(),username:uname,nome:nome,role:role,sesso:sesso,passHash:hashPass(pass)});
+  var newU={id:uid(),username:uname,nome:nome,role:role,sesso:sesso,passHash:hashPass(pass)};
+  if(displayRole) newU.displayRole=displayRole;
+  users.push(newU);
   saveUsers(users); toast('Persona creata'); toggleAddUserForm(); renderMembriView(); updateHeaderStats();
 }
 function openEditUser(userId){
@@ -2734,6 +2999,7 @@ function openEditUser(userId){
   document.getElementById('eu-pass').value='';
   document.getElementById('eu-sesso').value=u.sesso||'m';
   document.getElementById('eu-role').value=u.role;
+  document.getElementById('eu-displayRole').value=u.displayRole||'';
   document.getElementById('editUserModal').classList.remove('hidden');
 }
 function saveEditUser(){
@@ -2743,11 +3009,13 @@ function saveEditUser(){
   var pass=document.getElementById('eu-pass').value;
   var sesso=document.getElementById('eu-sesso').value;
   var role=document.getElementById('eu-role').value;
+  var displayRole=document.getElementById('eu-displayRole').value||'';
   if(!nome||!uname){ toast('Nome e username obbligatori'); return; }
   var users=loadUsers()||[];
   if(users.find(function(u){return u.username===uname&&u.id!==userId;})){ toast('Username già in uso'); return; }
   var u=users.find(function(x){return x.id===userId;}); if(!u){ toast('Non trovato'); return; }
   u.nome=nome; u.username=uname; u.sesso=sesso; u.role=role;
+  if(displayRole) u.displayRole=displayRole; else delete u.displayRole;
   if(pass) u.passHash=hashPass(pass);
   saveUsers(users);
   if(currentUser&&currentUser.id===userId){ currentUser=u; applySession(); }
@@ -2763,14 +3031,25 @@ function renderMembriView(){
   var users=loadUsers()||[], list=document.getElementById('usersList');
   if(!list) return;
   if(!users.length){ list.innerHTML='<div class="empty">Nessuna persona registrata</div>'; return; }
-  list.innerHTML=users.map(function(u){
+  var ROLE_ORDER={admin:0,choreographer:1,performer:2,dancer:3,guitarist:3,staff:4,guest:5,user:3,'semi-admin':1};
+  var ROLE_LABELS={admin:'Admin',choreographer:'Choreographer',performer:'Performer',dancer:'Dancer',guitarist:'Guitarist',staff:'Staff',guest:'Guest',user:'Dancer','semi-admin':'Choreographer'};
+  var DISPLAY_ROLE_LABELS={performer:'Performer',dancer:'Dancer',guitarist:'Guitarist',staff:'Staff',admin:'Admin',choreographer:'Choreographer',guest:'Guest'};
+  var sorted=users.slice().sort(function(a,b){
+    var ra=(ROLE_ORDER[a.role]||9), rb=(ROLE_ORDER[b.role]||9);
+    if(ra!==rb) return ra-rb;
+    return a.nome.localeCompare(b.nome,'it');
+  });
+  list.innerHTML=sorted.map(function(u){
     var av=u.nome.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
-    var roleLabel={'admin':'Admin','semi-admin':'Semi-Admin','performer':'Performer','user':'Utente'}[u.role]||u.role;
+    var actualRole=u.role==='user'?'dancer':u.role==='semi-admin'?'choreographer':u.role;
+    // displayRole overrides badge only (not permissions)
+    var badgeRole=u.displayRole||actualRole;
+    var roleLabel=ROLE_LABELS[badgeRole]||badgeRole;
     var sb=u.sesso?'<span class="sesso-badge '+u.sesso+'">'+(u.sesso==='m'?'&#9794; Uomo':'&#9792; Donna')+'</span>':'';
     return '<div class="user-row">'
-      +'<div class="user-avatar '+(u.role==='admin'?'admin':u.role==='semi-admin'?'semi-admin':u.role==='performer'?'performer':'')+'">'+(av||'?')+'</div>'
+      +'<div class="user-avatar '+actualRole+'">'+(av||'?')+'</div>'
       +'<div class="user-info"><div class="user-name">'+esc(u.nome)+'</div><div class="user-username">@'+esc(u.username)+'</div></div>'
-      +sb+'<span class="user-role-badge '+u.role+'">'+roleLabel+'</span>'
+      +sb+'<span class="user-role-badge '+badgeRole+'">'+roleLabel+'</span>'
       +'<button class="btn btn-ghost btn-sm" onclick="openEditUser(\''+u.id+'\')">&#9998; Modifica</button>'
       +(u.id!=='admin_default'?'<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteUser(\''+u.id+'\')">&#10005;</button>':'')
       +'</div>';
@@ -2804,8 +3083,15 @@ function toggleDisponOverview(dateId){
 function renderDisponOverview(dateId,users){
   var container=document.getElementById('dovList-'+dateId); if(!container) return;
   var dp=(state.dispon&&state.dispon[dateId])||{};
+  var rdList=(state.rdsel&&state.rdsel[dateId])||[];
   var labels={presente:'&#10003; Presente','in-forse':'? In forse',assente:'&#10005; No'};
-  container.innerHTML=users.map(function(u){
+  // Only show users who are in the rdsel (convocati) list
+  var convocati=users.filter(function(u){ return rdList.indexOf(u.id)!==-1; });
+  if(!convocati.length){
+    container.innerHTML='<div style="font-size:0.78rem;color:var(--dimtext);padding:0.3rem 0">Nessun membro convocato.</div>';
+    return;
+  }
+  container.innerHTML=convocati.map(function(u){
     var choice=dp[u.username]||'nd', label=labels[choice]||'—';
     return '<div class="dispon-row"><div class="dispon-uname">'+esc(u.nome)+'<span style="font-size:0.65rem;color:var(--dimtext);margin-left:0.4rem">@'+esc(u.username)+'</span></div><span class="dispon-badge '+choice+'">'+label+'</span></div>';
   }).join('');
@@ -2949,9 +3235,40 @@ function renderMieDate(){
     var show=SHOWS[sid], color=show.color;
     var dt=parseDate(d.data);
     var citta=d.citta||loc.citta||'';
+    var teatro=loc.nome||'';
     var ticketone=loc.ticketone||'';
+    var mapsLink=mapsUrl(teatro,citta);
+    var rowId='md-'+d.id;
+
+    // Travel info
+    var travelHtml='';
+    var MICONS={'Furgone':'🚐 Furgone','Aereo':'✈️ Aereo','Nave':'🚢 Nave'};
+    var tparts=[];
+    if(loc.partenza_mezzo||loc.partenza_luogo||loc.partenza_dt){
+      var ml=MICONS[loc.partenza_mezzo]||('🚐 '+(loc.partenza_mezzo||'Furgone'));
+      tparts.push('<span class="travel-chip">'+ml+' <strong>Partenza</strong>'+(loc.partenza_luogo?' · '+esc(loc.partenza_luogo):'')+(loc.partenza_dt?' · '+esc(loc.partenza_dt):'')+'</span>');
+    }
+    if(loc.pernottamento==='si') tparts.push('<span class="travel-chip">🏨 Pernottamento</span>');
+    if(loc.rientro_mezzo||loc.rientro_luogo||loc.rientro_dt){
+      var rl=MICONS[loc.rientro_mezzo]||('🚐 '+(loc.rientro_mezzo||'Furgone'));
+      tparts.push('<span class="travel-chip">'+rl+' <strong>Rientro</strong>'+(loc.rientro_luogo?' · '+esc(loc.rientro_luogo):'')+(loc.rientro_dt?' · '+esc(loc.rientro_dt):'')+'</span>');
+    }
+    if(tparts.length) travelHtml='<div class="travel-display" style="margin-top:0.7rem">'+tparts.join('')+'</div>';
+
+    var detailHtml='<div class="miedate-detail" id="'+rowId+'-detail" style="display:none;background:var(--bg);border-top:1px solid var(--border);padding:1rem 1.2rem">'
+      +'<div style="font-size:0.82rem;color:var(--text)">'
+      +(teatro?'<div><strong>'+esc(teatro)+'</strong>'+(citta?' &mdash; '+esc(citta):'')+'</div>':'')
+      +(!teatro&&citta?'<div>'+esc(citta)+'</div>':'')
+      +(d.ora?'<div style="font-family:\'JetBrains Mono\',monospace;font-size:0.75rem;color:var(--dimtext);margin-top:0.3rem">Orario: '+esc(d.ora)+'</div>':'')
+      +(d.desc?'<div style="margin-top:0.4rem;color:var(--dimtext)">'+esc(d.desc)+'</div>':'')
+      +(mapsLink?'<div style="margin-top:0.5rem"><a href="'+esc(mapsLink)+'" target="_blank" rel="noopener" style="font-size:0.75rem;color:var(--calendar)">📍 Apri in Maps</a></div>':'')
+      +travelHtml
+      +(ticketone?'<div style="margin-top:0.7rem"><a class="miedate-ticket-btn" href="'+esc(ticketone)+'" target="_blank" rel="noopener">🎟 Acquista biglietti</a></div>':'')
+      +'</div>'
+      +'</div>';
+
     return '<div class="miedate-item">'
-      +'<div class="miedate-row">'
+      +'<div class="miedate-row" style="cursor:pointer" onclick="var d=document.getElementById(\''+rowId+'-detail\');var c=document.getElementById(\''+rowId+'-chv\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';c.style.transform=d.style.display===\'block\'?\'rotate(90deg)\':\'\'">'
       +'<div class="miedate-block">'
       +'<div class="miedate-block-main">'
       +'<div class="miedate-block-num" style="color:'+color+'">'+dt.getDate()+'</div>'
@@ -2962,10 +3279,11 @@ function renderMieDate(){
       +'<div class="miedate-cells">'
       +'<div class="miedate-cell miedate-cell-show" style="color:'+color+'">'+esc(show.label)+'</div>'
       +(citta?'<div class="miedate-cell miedate-cell-city">'+esc(citta)+'</div>':'')
-      +(d.ora?'<div class="miedate-cell miedate-cell-time">'+esc(d.ora)+'</div>':'')
-      +(ticketone?'<div class="miedate-cell"><a class="miedate-ticket-btn" href="'+esc(ticketone)+'" target="_blank" rel="noopener">&#127915; Biglietti</a></div>':'')
+      +(d.ora?'<div class="miedate-cell miedate-cell-time">'+(ticketone?'<a class="time-ticket-link" href="'+esc(ticketone)+'" target="_blank" onclick="event.stopPropagation()">'+esc(d.ora)+' 🎟</a>':esc(d.ora))+'</div>':'')
       +'</div>'
+      +'<span id="'+rowId+'-chv" style="color:var(--dimtext);font-size:1rem;padding:0 0.5rem;transition:transform 0.2s">›</span>'
       +'</div>'
+      +detailHtml
       +'</div>';
   }
 
@@ -3187,14 +3505,16 @@ function buildBottomNav(){
     {id:'michael',      label:'Michael',     color:'#e8394a'},
     {id:'freddie',      label:'Freddie',     color:'#ffc43d'},
     {id:'i80',          label:"I Love '80",  color:'#4ec9f0'},
-    {id:'finanze',      label:'Cachet',      color:'#34d399'},
-    {id:'miedate',      label:'Mie Date',    color:'#34d399'},
+    {id:'finanze',      label:'Cachet',      color:'#34d399', guestHide:true},
+    {id:'miedate',      label:'Mie Date',    color:'#34d399', guestHide:true},
     {id:'impostazioni', label:'Impostazioni',color:'#a0a0c0'},
     {id:'membri',       label:'Membri',     color:'var(--calendar)', adminOnly:true},
   ];
+  var _isGuest=currentUser&&currentUser.role==='guest';
   inner.innerHTML=items.map(function(item){
     if(item.hidden) return '';
-    if(item.adminOnly && (!currentUser||currentUser.role!=='admin')) return '';
+    if(item.adminOnly && (!currentUser||(currentUser.role!=='admin'&&currentUser.role!=='choreographer'))) return '';
+    if(item.guestHide && _isGuest) return '';
     if(item.authRequired && !currentUser) return '';
     var active=document.getElementById('view-'+item.id)&&document.getElementById('view-'+item.id).classList.contains('active');
     return '<button class="bn-item'+(active?' active':'')+'" data-show="'+item.id+'" onclick="showView(\''+item.id+'\')">'
