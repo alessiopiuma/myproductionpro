@@ -1986,15 +1986,18 @@ async function loadFromCloud(){
     var cs=await sbGet('main_state');
     if(cs){ state=cs; localStorage.setItem('msrls_v5',JSON.stringify(state)); ok=true; }
     var cu=await sbGetUsers();
-    if(cu){
-      saveUsers(cu.map(function(u){
-        return {id:u.id,nome:u.nome,username:u.username,
-                passHash:u.pass_hash,role:u.role,sesso:u.sesso,
-                displayRole:u.display_role||undefined,
-                sections:normalizeUserSections(u.sections)};
-      }),{noSync:true});
-      ok=true;
-    }
+    var mapped=(cu||[]).map(function(u){
+      return {id:u.id,nome:u.nome,username:u.username,
+              passHash:u.pass_hash,role:u.role,sesso:u.sesso,
+              displayRole:u.display_role||undefined,
+              sections:normalizeUserSections(u.sections)};
+    });
+    saveUsers(mapped,{noSync:true});
+    try{
+      localStorage.removeItem('msrls_users');
+      localStorage.removeItem('msrls_users_cache');
+    }catch(e){}
+    if(cu) ok=true;
   }catch(e){ console.warn('loadFromCloud error',e); }
   return ok;
 }
@@ -2137,14 +2140,14 @@ function mapsUrl(teatro, citta){
 // ══════ NAV ══════
 function showView(id){
   if(id!=='home'&&typeof _cdTimer!=='undefined'&&_cdTimer){clearInterval(_cdTimer);_cdTimer=null;}
+  if(!canAccessView(id)){ showView('calendar'); return; }
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+id).classList.add("active");
   var _navEl=document.querySelector(".nav-item[data-show=\""+id+"\"]");
   if(_navEl) _navEl.classList.add("active");
-  if(id==="home"){ renderHome(); }
-  else if(id==="calendar"){ calTab==="list"?renderCalList():renderCalendar(); renderCalCountdown(); }
-  else if(id==="membri"){ if(!currentUser||currentUser.role!=='admin'){ showView('home'); return; } renderMembriView(); }
+  if(id==="calendar"){ calTab==="list"?renderCalList():renderCalendar(); renderCalCountdown(); }
+  else if(id==="membri"){ if(!isTrueAdmin()){ showView('calendar'); return; } renderMembriView(); }
   else if(id==="finanze"){ renderFinanze(); }
   else if(id==="miedate"){ renderMieDate(); }
   else if(id==="pagamenti"){ renderPagamenti(); }
@@ -2188,8 +2191,49 @@ function canManageShow(showId){
   if(currentUser.role==='choreographer') return true;
   return false;
 }
-function isAdminLike(){ return currentUser&&(currentUser.role==='admin'||currentUser.role==='choreographer'); }
+function isTrueAdmin(){
+  return !!currentUser && (String(currentUser.role||'').toLowerCase()==='admin' || String(currentUser.username||'').toLowerCase()==='admin');
+}
+function isAdminLike(){ return currentUser&&(isTrueAdmin()||currentUser.role==='choreographer'); }
 function isGuest(){ return currentUser&&currentUser.role==='guest'; }
+function canAccessView(viewId){
+  if(!currentUser) return false;
+  if(viewId==='membri') return isTrueAdmin();
+  if(viewId==='miedate') return currentUser.role!=='guest';
+  if(viewId==='pagamenti' || viewId==='finanze') return currentUser.role!=='guest';
+  return true;
+}
+function canChangeOwnPassword(){
+  return !!currentUser && currentUser.role!=='guest';
+}
+function applyRoleVisibility(){
+  var role=currentUser&&currentUser.role?currentUser.role:'';
+  var hiddenByRole={
+    admin:[],
+    guest:['membri','pagamenti','finanze','miedate'],
+    dancer:['membri'],
+    staff:['membri'],
+    performer:['membri'],
+    guitarist:['membri'],
+    choreographer:['membri']
+  };
+  var hidden=isTrueAdmin()?[]:(hiddenByRole[role]||['membri']);
+  document.querySelectorAll('.nav-item[data-show]').forEach(function(item){
+    var viewId=item.getAttribute('data-show');
+    item.style.display=hidden.indexOf(viewId)!==-1?'none':'';
+  });
+  var adminLabel=document.getElementById('adminNavLabel');
+  if(adminLabel) adminLabel.style.display=isTrueAdmin()?'':'none';
+  document.querySelectorAll('.sidebar .nav-group-label').forEach(function(label){
+    if(label.id==='adminNavLabel') return;
+    var next=label.nextElementSibling, hasVisible=false;
+    while(next && !next.classList.contains('nav-group-label')){
+      if(next.classList.contains('nav-item') && next.style.display!=='none'){ hasVisible=true; break; }
+      next=next.nextElementSibling;
+    }
+    label.style.display=hasVisible?'':'none';
+  });
+}
 
 function renderDateItem(d, showId, loc, extraTimes){
   var dt=parseDate(d.data);
@@ -2229,8 +2273,7 @@ function renderDateItem(d, showId, loc, extraTimes){
   if(!state.dispon[d.id]) state.dispon[d.id]={};
   if(!state.rdsel) state.rdsel={};
   var myDispon="";
-  var _isGuest=currentUser&&currentUser.role==='guest';
-  if(currentUser && !_isGuest){
+  if(currentUser && !isGuest()){
     var rdList=state.rdsel[d.id]||[];
     var isSel=rdList.indexOf(currentUser.id)!==-1;
     var mc=state.dispon[d.id][currentUser.username]||"";
@@ -2370,7 +2413,7 @@ function renderShow(id){
     +'</div>'
     +'<div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">'
     +'<label class="hide-past-toggle"><input type="checkbox" id="hidePastShow-'+id+'" '+(doHide?'checked':'')+' onchange="renderShow(\''+id+'\')"> Nascondi show passati</label>'
-    +(currentUser&&currentUser.role==='admin'?'<button class="btn btn-sm btn-accent" style="--accent:'+show.color+'" onclick="toggleAddForm(\''+id+'\')">+ Data</button>':"")
+    +(isTrueAdmin()?'<button class="btn btn-sm btn-accent" style="--accent:'+show.color+'" onclick="toggleAddForm(\''+id+'\')">+ Data</button>':"")
     +'</div></div>';
 
   var addForm=isAdmin?'<div class="add-form" id="addForm-'+id+'">'
@@ -3078,79 +3121,33 @@ function hashPass(str){
   }
   return ((h1>>>0).toString(16).padStart(8,'0'))+((h2>>>0).toString(16).padStart(8,'0'));
 }
-function loadUsers(){ var r=localStorage.getItem('msrls_users'); if(r){try{return JSON.parse(r);}catch(e){}} return null; }
-function saveUsers(u,opts){ localStorage.setItem('msrls_users',JSON.stringify(u)); if(!(opts&&opts.noSync)) scheduleSync(); }
+var _usersCache=null;
+function cloneUsers(users){
+  return (Array.isArray(users)?users:[]).map(function(u){ return Object.assign({},u); });
+}
+function loadUsers(){
+  if(Array.isArray(_usersCache)) return cloneUsers(_usersCache);
+  try{
+    localStorage.removeItem('msrls_users');
+    localStorage.removeItem('msrls_users_cache');
+  }catch(e){}
+  _usersCache=[];
+  return [];
+}
+function saveUsers(u,opts){
+  _usersCache=cloneUsers(Array.isArray(u)?u:[]);
+  try{
+    localStorage.removeItem('msrls_users');
+    localStorage.removeItem('msrls_users_cache');
+  }catch(e){}
+  if(!(opts&&opts.noSync)) scheduleSync();
+}
 function ensureDefaultAdmin(){
-  var users=loadUsers();
-  if(!users || !Array.isArray(users) || !users.length){
-    users=[
-      {id:1, nome:'Alessio Piuma', username:'alessio', passHash:hashPass('alessio'), role:'performer', sesso:'Uomo'},
-      {id:2, nome:'Luca Villaggio', username:'luca', passHash:hashPass('luca'), role:'performer', sesso:'Uomo'},
-      {id:3, nome:'Liliana Licciardello', username:'liliana', passHash:hashPass('liliana'), role:'performer', sesso:'Donna'},
-      {id:4, nome:'Amministratore', username:'admin', passHash:hashPass('admin'), role:'admin', sesso:''},
-      {id:5, nome:'Alice Sapienza', username:'alice', passHash:hashPass('alice'), role:'choreographer', sesso:'Donna'},
-      {id:6, nome:'Vincenzo Privitera', username:'vincenzo', passHash:hashPass('vincenzo'), role:'choreographer', sesso:'Uomo'},
-      {id:7, nome:'Francesco Suriano', username:'francesco', passHash:hashPass('francesco'), role:'dancer', sesso:'Uomo'},
-      {id:8, nome:'Samuele Di Vita', username:'samuele', passHash:hashPass('samuele'), role:'dancer', sesso:'Uomo'},
-      {id:9, nome:'Alessandro La Rosa', username:'alessandro', passHash:hashPass('alessandro'), role:'dancer', sesso:'Uomo'},
-      {id:10, nome:'Ugo Isaia', username:'ugo', passHash:hashPass('ugo'), role:'dancer', sesso:'Uomo'},
-      {id:11, nome:'Ivan Buzzanga', username:'ivan', passHash:hashPass('ivan'), role:'dancer', sesso:'Uomo'},
-      {id:12, nome:'Manuela Trecarichi', username:'manuela', passHash:hashPass('manuela'), role:'dancer', sesso:'Donna'},
-      {id:13, nome:'Roberta Calì', username:'roberta', passHash:hashPass('roberta'), role:'dancer', sesso:'Donna'},
-      {id:14, nome:'Marzia Calì', username:'marzia', passHash:hashPass('marzia'), role:'dancer', sesso:'Donna'},
-      {id:15, nome:'Letizia Ferlito', username:'letizia', passHash:hashPass('letizia'), role:'dancer', sesso:'Donna'},
-      {id:16, nome:'Nadia Bizzini', username:'nadia', passHash:hashPass('nadia'), role:'dancer', sesso:'Donna'},
-      {id:17, nome:'Melissa Bertolo', username:'melissa', passHash:hashPass('melissa'), role:'dancer', sesso:'Donna'},
-      {id:18, nome:'Federica Felice', username:'federica', passHash:hashPass('federica'), role:'dancer', sesso:'Donna'},
-      {id:19, nome:'Giulia Raneri', username:'giulia', passHash:hashPass('giulia'), role:'dancer', sesso:'Donna'},
-      {id:20, nome:'Dario Cerfolli', username:'dario', passHash:hashPass('dario'), role:'staff', sesso:'Uomo'},
-      {id:21, nome:'Carmelo Massimino', username:'melo', passHash:hashPass('melo'), role:'staff', sesso:'Uomo'},
-      {id:22, nome:'Fabio Tosto', username:'fabio', passHash:hashPass('fabio'), role:'staff', sesso:'Uomo'},
-      {id:23, nome:'Irma Mirtilla', username:'irma', passHash:hashPass('irma'), role:'guitarist', sesso:'Donna'},
-      {id:24, nome:'Peppe Viola', username:'peppe', passHash:hashPass('peppe'), role:'guitarist', sesso:'Uomo'}
-    ];
-    saveUsers(users);
-    return;
-  }
-
-  var changed=false;
-  var seeds=[
-      {id:1, nome:'Alessio Piuma', username:'alessio', passHash:hashPass('alessio'), role:'performer', sesso:'Uomo'},
-      {id:2, nome:'Luca Villaggio', username:'luca', passHash:hashPass('luca'), role:'performer', sesso:'Uomo'},
-      {id:3, nome:'Liliana Licciardello', username:'liliana', passHash:hashPass('liliana'), role:'performer', sesso:'Donna'},
-      {id:4, nome:'Amministratore', username:'admin', passHash:hashPass('admin'), role:'admin', sesso:''},
-      {id:5, nome:'Alice Sapienza', username:'alice', passHash:hashPass('alice'), role:'choreographer', sesso:'Donna'},
-      {id:6, nome:'Vincenzo Privitera', username:'vincenzo', passHash:hashPass('vincenzo'), role:'choreographer', sesso:'Uomo'},
-      {id:7, nome:'Francesco Suriano', username:'francesco', passHash:hashPass('francesco'), role:'dancer', sesso:'Uomo'},
-      {id:8, nome:'Samuele Di Vita', username:'samuele', passHash:hashPass('samuele'), role:'dancer', sesso:'Uomo'},
-      {id:9, nome:'Alessandro La Rosa', username:'alessandro', passHash:hashPass('alessandro'), role:'dancer', sesso:'Uomo'},
-      {id:10, nome:'Ugo Isaia', username:'ugo', passHash:hashPass('ugo'), role:'dancer', sesso:'Uomo'},
-      {id:11, nome:'Ivan Buzzanga', username:'ivan', passHash:hashPass('ivan'), role:'dancer', sesso:'Uomo'},
-      {id:12, nome:'Manuela Trecarichi', username:'manuela', passHash:hashPass('manuela'), role:'dancer', sesso:'Donna'},
-      {id:13, nome:'Roberta Calì', username:'roberta', passHash:hashPass('roberta'), role:'dancer', sesso:'Donna'},
-      {id:14, nome:'Marzia Calì', username:'marzia', passHash:hashPass('marzia'), role:'dancer', sesso:'Donna'},
-      {id:15, nome:'Letizia Ferlito', username:'letizia', passHash:hashPass('letizia'), role:'dancer', sesso:'Donna'},
-      {id:16, nome:'Nadia Bizzini', username:'nadia', passHash:hashPass('nadia'), role:'dancer', sesso:'Donna'},
-      {id:17, nome:'Melissa Bertolo', username:'melissa', passHash:hashPass('melissa'), role:'dancer', sesso:'Donna'},
-      {id:18, nome:'Federica Felice', username:'federica', passHash:hashPass('federica'), role:'dancer', sesso:'Donna'},
-      {id:19, nome:'Giulia Raneri', username:'giulia', passHash:hashPass('giulia'), role:'dancer', sesso:'Donna'},
-      {id:20, nome:'Dario Cerfolli', username:'dario', passHash:hashPass('dario'), role:'staff', sesso:'Uomo'},
-      {id:21, nome:'Carmelo Massimino', username:'melo', passHash:hashPass('melo'), role:'staff', sesso:'Uomo'},
-      {id:22, nome:'Fabio Tosto', username:'fabio', passHash:hashPass('fabio'), role:'staff', sesso:'Uomo'},
-      {id:23, nome:'Irma Mirtilla', username:'irma', passHash:hashPass('irma'), role:'guitarist', sesso:'Donna'},
-      {id:24, nome:'Peppe Viola', username:'peppe', passHash:hashPass('peppe'), role:'guitarist', sesso:'Uomo'}
-    ];
-
-  seeds.forEach(function(seed){
-    var found = users.find(function(u){ return String((u.username||'')).toLowerCase()===seed.username; });
-    if(!found){ users.push(seed); changed=true; return; }
-    if(!found.passHash){ found.passHash=seed.passHash; changed=true; }
-    if(!found.role){ found.role=seed.role; changed=true; }
-    if(typeof found.sesso==='undefined'){ found.sesso=seed.sesso; changed=true; }
-    if(!found.nome){ found.nome=seed.nome; changed=true; }
-  });
-
-  if(changed) saveUsers(users);
+  try{
+    localStorage.removeItem('msrls_users');
+    localStorage.removeItem('msrls_users_cache');
+  }catch(e){}
+  if(!Array.isArray(_usersCache)) _usersCache=[];
 }
 function toggleLoginPass(btn){
   var inp=document.getElementById('loginPass');
@@ -3160,8 +3157,8 @@ function toggleLoginPass(btn){
 var currentUser=null;
 var _cloudLoaded=false;
 function getRoleMeta(role){
-  var ROLE_LABELS={admin:'Admin',choreographer:'Choreographer',performer:'Performer',dancer:'Dancer',staff:'Staff',guest:'Guest',user:'Dancer','semi-admin':'Choreographer'};
-  var ROLE_COLORS={admin:'#e8000d',choreographer:'#f97316',performer:'#f59e0b',dancer:'#0ea5e9',staff:'#10b981',guest:'#6b7280',user:'#0ea5e9','semi-admin':'#f97316'};
+  var ROLE_LABELS={admin:'Admin',choreographer:'Choreographer',performer:'Performer',dancer:'Dancer',guitarist:'Guitarist',staff:'Staff',guest:'Guest',user:'Dancer','semi-admin':'Choreographer'};
+  var ROLE_COLORS={admin:'#e8000d',choreographer:'#f97316',performer:'#f59e0b',dancer:'#0ea5e9',guitarist:'#8b5cf6',staff:'#10b981',guest:'#6b7280',user:'#0ea5e9','semi-admin':'#f97316'};
   return {label:ROLE_LABELS[role]||role,color:ROLE_COLORS[role]||'var(--dimtext)'};
 }
 
@@ -3271,17 +3268,18 @@ function doLogin(){
   var errEl=document.getElementById('loginError'); errEl.textContent='';
   if(!username||!pass){ errEl.textContent='Inserisci username e password.'; return; }
 
-  // Always ensure local admin is correct before attempting login
-  ensureDefaultAdmin();
-
-  var users=loadUsers()||[]; var hash=hashPass(pass);
-  var user=users.find(function(u){return u.username===username&&u.passHash===hash;});
-  if(user){
-    finalizeLogin(user);
-    return;
+  var hash=hashPass(pass);
+  function getBuiltinAdminUser(){
+    return {id:'admin_default',nome:'Amministratore',username:'admin',passHash:hashPass('admin'),role:'admin',sesso:null,sections:[]};
+  }
+  function tryLoginFromLoadedUsers(){
+    var users=loadUsers()||[];
+    var found=users.find(function(u){return u.username===username&&u.passHash===hash;})||null;
+    if(found) return found;
+    if(username==='admin'&&pass==='admin') return getBuiltinAdminUser();
+    return null;
   }
 
-  // Not found locally — try cloud if not yet loaded
   if(!_cloudLoaded){
     var btn=document.querySelector('.login-btn');
     if(btn){ btn.disabled=true; btn.textContent='Connessione...'; }
@@ -3289,16 +3287,22 @@ function doLogin(){
     loadFromCloud().then(function(){
       _cloudLoaded=true;
       if(btn){ btn.disabled=false; btn.textContent='Accedi'; }
-      ensureDefaultAdmin();
-      var u2=loadUsers()||[];
-      var user2=u2.find(function(u){return u.username===username&&u.passHash===hash;});
-      if(!user2){ errEl.textContent='Credenziali non corrette.'; return; }
-      finalizeLogin(user2);
+      var user=tryLoginFromLoadedUsers();
+      if(!user){ errEl.textContent='Credenziali non corrette.'; return; }
+      finalizeLogin(user);
     }).catch(function(){
       _cloudLoaded=true;
       if(btn){ btn.disabled=false; btn.textContent='Accedi'; }
-      errEl.textContent='Credenziali non corrette.';
+      var user=tryLoginFromLoadedUsers();
+      if(user){ finalizeLogin(user); return; }
+      errEl.textContent='Impossibile caricare i membri da Supabase.';
     });
+    return;
+  }
+
+  var user=tryLoginFromLoadedUsers();
+  if(user){
+    finalizeLogin(user);
     return;
   }
   errEl.textContent='Credenziali non corrette.';
@@ -3338,21 +3342,7 @@ function applySession(){
   var roleColor=roleMeta.color;
   document.getElementById('currentUserLabel').innerHTML='<strong>'+esc(currentUser.nome)+'</strong>&nbsp;<span style="font-size:0.65rem;background:'+roleColor+'22;border-radius:4px;padding:0.1rem 0.4rem;color:'+roleColor+'">'+roleLabel+'</span>';
 
-  // Admin only gets members nav
-  if(currentUser.role==='admin'){
-    var _al=document.getElementById('adminNavLabel');
-    var _mn=document.getElementById('membriNavItem');
-    if(_al) _al.style.display='';
-    if(_mn) _mn.style.display='';
-  }
-
-  // Guest: hide strumenti nav items in sidebar
-  if(currentUser.role==='guest'){
-    ['miedate','finanze'].forEach(function(id){
-      var el=document.querySelector('.nav-item[data-show="'+id+'"]');
-      if(el) el.style.display='none';
-    });
-  }
+  applyRoleVisibility();
 
   updateHeaderStats();
   buildBottomNav();
@@ -3361,42 +3351,64 @@ function applySession(){
 }
 
 // ══════ PERSONE ══════
-function toggleAddUserForm(){ var f=document.getElementById('addUserForm'); f.style.display=f.style.display==='none'?'':'none'; }
+function resetUserForm(prefix){
+  var ids=['nome','user','pass','displayRole'];
+  ids.forEach(function(key){
+    var el=document.getElementById(prefix+'-'+key);
+    if(el) el.value='';
+  });
+  var roleEl=document.getElementById(prefix+'-role');
+  if(roleEl) roleEl.value='dancer';
+  var sessoEl=document.getElementById(prefix+'-sesso');
+  if(sessoEl) sessoEl.value='m';
+  setMemberSectionsToForm(prefix, []);
+}
+function toggleAddUserForm(forceOpen){
+  var f=document.getElementById('addUserForm');
+  if(!f) return;
+  var opening=(typeof forceOpen==='boolean')?forceOpen:(getComputedStyle(f).display==='none');
+  f.style.display=opening?'':'none';
+  if(!opening) resetUserForm('u');
+}
 function saveNewUser(){
-  var nome=document.getElementById('u-nome').value.trim();
-  var uname=document.getElementById('u-user').value.trim().toLowerCase();
-  var pass=document.getElementById('u-pass').value;
+  var nome=(document.getElementById('u-nome').value||'').trim();
+  var uname=(document.getElementById('u-user').value||'').trim().toLowerCase();
+  var pass=document.getElementById('u-pass').value||'';
   var sesso=document.getElementById('u-sesso').value;
   var role=document.getElementById('u-role').value;
   var displayRole=document.getElementById('u-displayRole').value||'';
   var sections=getMemberSectionsFromForm('u');
   if(!nome||!uname||!pass){ toast('Compila tutti i campi'); return; }
   var users=loadUsers()||[];
-  if(users.find(function(u){return u.username===uname;})){ toast('Username già in uso'); return; }
+  if(users.find(function(u){return String(u.username||'').toLowerCase()===uname;})){ toast('Username già in uso'); return; }
   var newU={id:uid(),username:uname,nome:nome,role:role,sesso:(sesso==='f'?'Donna':'Uomo'),passHash:hashPass(pass),sections:sections};
   if(displayRole) newU.displayRole=displayRole;
   users.push(newU);
-  saveUsers(users); toast('Persona creata'); toggleAddUserForm(); renderMembriView(); updateHeaderStats();
+  saveUsers(users);
+  toast('Persona creata');
+  toggleAddUserForm(false);
+  renderMembriView();
+  updateHeaderStats();
 }
 function openEditUser(userId){
   var targetId=String(userId);
   var u=(loadUsers()||[]).find(function(x){return String(x.id)===targetId;});
   if(!u){ toast('Membro non trovato'); return; }
   document.getElementById('eu-id').value=u.id;
-  document.getElementById('eu-nome').value=u.nome;
-  document.getElementById('eu-user').value=u.username;
+  document.getElementById('eu-nome').value=u.nome||'';
+  document.getElementById('eu-user').value=u.username||'';
   document.getElementById('eu-pass').value='';
   document.getElementById('eu-sesso').value=(normalizeSesso(u.sesso)==='f'?'f':'m');
-  document.getElementById('eu-role').value=u.role;
+  document.getElementById('eu-role').value=(u.role||'dancer');
   document.getElementById('eu-displayRole').value=u.displayRole||'';
   setMemberSectionsToForm('eu', u.sections||[]);
   document.getElementById('editUserModal').classList.remove('hidden');
 }
 function saveEditUser(){
   var userId=document.getElementById('eu-id').value;
-  var nome=document.getElementById('eu-nome').value.trim();
-  var uname=document.getElementById('eu-user').value.trim().toLowerCase();
-  var pass=document.getElementById('eu-pass').value;
+  var nome=(document.getElementById('eu-nome').value||'').trim();
+  var uname=(document.getElementById('eu-user').value||'').trim().toLowerCase();
+  var pass=document.getElementById('eu-pass').value||'';
   var sesso=document.getElementById('eu-sesso').value;
   var role=document.getElementById('eu-role').value;
   var displayRole=document.getElementById('eu-displayRole').value||'';
@@ -3404,50 +3416,74 @@ function saveEditUser(){
   if(!nome||!uname){ toast('Nome e username obbligatori'); return; }
   var users=loadUsers()||[];
   var targetId=String(userId);
-  if(users.find(function(u){return u.username===uname&&String(u.id)!==targetId;})){ toast('Username già in uso'); return; }
-  var u=users.find(function(x){return String(x.id)===targetId;}); if(!u){ toast('Non trovato'); return; }
-  u.nome=nome; u.username=uname; u.sesso=(sesso==='f'?'Donna':'Uomo'); u.role=role; u.sections=sections;
+  if(users.find(function(u){ return String(u.username||'').toLowerCase()===uname && String(u.id)!==targetId; })){ toast('Username già in uso'); return; }
+  var u=users.find(function(x){return String(x.id)===targetId;});
+  if(!u){ toast('Non trovato'); return; }
+  u.nome=nome;
+  u.username=uname;
+  u.sesso=(sesso==='f'?'Donna':'Uomo');
+  u.role=role;
+  u.sections=sections;
   if(displayRole) u.displayRole=displayRole; else delete u.displayRole;
   if(pass) u.passHash=hashPass(pass);
   saveUsers(users);
   if(currentUser&&String(currentUser.id)===targetId){ currentUser=u; applySession(); }
-  toast('Aggiornato'); closeModal('editUserModal'); renderMembriView();
+  toast('Aggiornato');
+  closeModal('editUserModal');
+  renderMembriView();
+  updateHeaderStats();
 }
 function deleteUser(userId){
   if(!confirm('Eliminare?')) return;
   var targetId=String(userId);
-  if(targetId==='admin_default'){ toast('Non eliminabile'); return; }
-  saveUsers((loadUsers()||[]).filter(function(u){return String(u.id)!==targetId;}));
-  toast('Eliminato'); renderMembriView(); updateHeaderStats();
+  var users=loadUsers()||[];
+  var target=users.find(function(u){ return String(u.id)===targetId; });
+  if(targetId==='admin_default' || (target && String(target.username||'').toLowerCase()==='admin')){ toast('Admin non eliminabile'); return; }
+  saveUsers(users.filter(function(u){return String(u.id)!==targetId;}));
+  toast('Eliminato');
+  renderMembriView();
+  updateHeaderStats();
 }
 function renderMembriView(){
-  var users=loadUsers()||[], list=document.getElementById('usersList');
+  var users=loadUsers()||[];
+  if(isTrueAdmin() && !users.some(function(u){ return String((u&&u.username)||'').toLowerCase()==='admin'; })){
+    users=[{id:'admin_default',nome:'Amministratore',username:'admin',passHash:hashPass('admin'),role:'admin',sesso:null,sections:[]}].concat(users);
+  }
+  var list=document.getElementById('usersList');
   if(!list) return;
-  if(!users.length){ list.innerHTML='<div class="empty">Nessuna persona registrata</div>'; return; }
+  if(!users.length){ list.innerHTML='<div class="empty">Nessun membro presente in MS_USERS.</div>'; return; }
   var ROLE_ORDER={admin:0,choreographer:1,performer:2,dancer:3,guitarist:3,staff:4,guest:5,user:3,'semi-admin':1};
   var ROLE_LABELS={admin:'Admin',choreographer:'Choreographer',performer:'Performer',dancer:'Dancer',guitarist:'Guitarist',staff:'Staff',guest:'Guest',user:'Dancer','semi-admin':'Choreographer'};
-  var DISPLAY_ROLE_LABELS={performer:'Performer',dancer:'Dancer',guitarist:'Guitarist',staff:'Staff',admin:'Admin',choreographer:'Choreographer',guest:'Guest'};
   var sorted=users.slice().sort(function(a,b){
-    var ra=(ROLE_ORDER[a.role]||9), rb=(ROLE_ORDER[b.role]||9);
+    var roleA=(a&&a.role)||'dancer', roleB=(b&&b.role)||'dancer';
+    var ra=(ROLE_ORDER[roleA]||9), rb=(ROLE_ORDER[roleB]||9);
     if(ra!==rb) return ra-rb;
-    return a.nome.localeCompare(b.nome,'it');
+    var nameA=String((a&&a.nome)||'').trim();
+    var nameB=String((b&&b.nome)||'').trim();
+    return nameA.localeCompare(nameB,'it');
   });
-  list.innerHTML=sorted.map(function(u){
-    var av=u.nome.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
-    var actualRole=u.role==='user'?'dancer':u.role==='semi-admin'?'choreographer':u.role;
-    // displayRole overrides badge only (not permissions)
-    var badgeRole=u.displayRole||actualRole;
+  list.innerHTML=sorted.map(function(rawUser){
+    var u=rawUser||{};
+    var fullName=String(u.nome||u.username||'Membro').trim();
+    var username=String(u.username||'').trim();
+    var actualRole=u.role==='user'?'dancer':u.role==='semi-admin'?'choreographer':(u.role||'dancer');
+    var badgeRole=(u.displayRole||actualRole||'dancer');
     var roleLabel=ROLE_LABELS[badgeRole]||badgeRole;
-    var sx=normalizeSesso(u.sesso); var sb=sx?'<span class="sesso-badge '+sx+'">'+(sx==='f'?'&#9792; Donna':'&#9794; Uomo')+'</span>':'';
+    var actualRoleLabel=ROLE_LABELS[actualRole]||actualRole;
+    var av=fullName.split(/\s+/).filter(Boolean).map(function(w){return w.charAt(0)||'';}).slice(0,2).join('').toUpperCase()||'?';
+    var sx=normalizeSesso(u.sesso);
+    var sb=sx?'<span class="sesso-badge '+sx+'">'+(sx==='f'?'&#9792; Donna':'&#9794; Uomo')+'</span>':'';
     var sectionBadges=normalizeUserSections(u.sections).map(function(sec){
       return '<span class="member-sec-chip">'+esc(getSectionLabel(sec))+'</span>';
     }).join('');
+    var effectiveRoleMeta='<div style="font-size:0.66rem;color:var(--dimtext);margin-top:0.18rem">Permessi: <strong style="color:var(--text)">'+esc(actualRoleLabel)+'</strong></div>';
+    var safeId=String(u.id||'').replace(/'/g,"\\'");
     return '<div class="user-row">'
-      +'<div class="user-avatar '+actualRole+'">'+(av||'?')+'</div>'
-      +'<div class="user-info"><div class="user-name">'+esc(u.nome)+'</div><div class="user-username">@'+esc(u.username)+'</div>'+(sectionBadges?'<div class="member-sec-row">'+sectionBadges+'</div>':'')+'</div>'
-      +sb+'<span class="user-role-badge '+badgeRole+'">'+roleLabel+'</span>'
-      +'<button class="btn btn-ghost btn-sm" onclick="openEditUser(\''+u.id+'\')">&#9998; Modifica</button>'
-      +(u.id!=='admin_default'?'<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteUser(\''+u.id+'\')">&#10005;</button>':'')
+      +'<div class="user-avatar '+actualRole+'">'+av+'</div>'
+      +'<div class="user-info"><div class="user-name">'+esc(fullName)+'</div><div class="user-username">@'+esc(username||'—')+'</div>'+effectiveRoleMeta+(sectionBadges?'<div class="member-sec-row">'+sectionBadges+'</div>':'')+'</div>'
+      +sb+'<span class="user-role-badge '+badgeRole+'">'+esc(roleLabel)+'</span>'
+      +'<button class="btn btn-ghost btn-sm" onclick="openEditUser(\''+safeId+'\')">&#9998; Modifica</button>'
+      +(safeId!=='admin_default'?'<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteUser(\''+safeId+'\')">&#10005;</button>':'')
       +'</div>';
   }).join('');
 }
@@ -4155,23 +4191,32 @@ function buildBottomNav(){
   var inner=document.getElementById('bottomNavInner');
   if(!inner) return;
   var items=[
-    {id:'home',         label:'Dashboard',          color:'#ffffff', hidden:true},
     {id:'calendar',     label:'Calendario',         color:'#f59e0b'},
-    {id:'miedate',      label:'Le mie date',        color:'#f59e0b', guestHide:true},
+    {id:'miedate',      label:'Le mie date',        color:'#f59e0b'},
     {id:'kpop',         label:'K-Pop',              color:'#ff4db8'},
     {id:'i80',          label:"I Love '80",         color:'#4ec9f0'},
     {id:'michael',      label:'My Name Is Michael', color:'#e8394a'},
     {id:'freddie',      label:'Freddie',            color:'#ffc43d'},
-    {id:'pagamenti',    label:'Pagamenti',          color:'#34d399', guestHide:true},
-    {id:'finanze',      label:'Cachet',             color:'#34d399', guestHide:true},
+    {id:'pagamenti',    label:'Pagamenti',          color:'#34d399'},
+    {id:'finanze',      label:'Cachet',             color:'#34d399'},
     {id:'impostazioni', label:'Impostazioni',       color:'#fbbf24'},
     {id:'membri',       label:'Membri',             color:'#a97dfa', adminOnly:true},
   ];
-  var _isGuest=currentUser&&currentUser.role==='guest';
+  var role=currentUser&&currentUser.role?currentUser.role:'';
+  var hiddenByRole={
+    admin:[],
+    guest:['membri','pagamenti','finanze','miedate'],
+    dancer:['membri'],
+    staff:['membri'],
+    performer:['membri'],
+    guitarist:['membri'],
+    choreographer:['membri']
+  };
+  var hidden=isTrueAdmin()?[]:(hiddenByRole[role]||['membri']);
   inner.innerHTML=items.map(function(item){
     if(item.hidden) return '';
-    if(item.adminOnly && (!currentUser||currentUser.role!=='admin')) return '';
-    if(item.guestHide && _isGuest) return '';
+    if(hidden.indexOf(item.id)!==-1) return '';
+    if(item.adminOnly && !isTrueAdmin()) return '';
     if(item.authRequired && !currentUser) return '';
     var active=document.getElementById('view-'+item.id)&&document.getElementById('view-'+item.id).classList.contains('active');
     return '<button class="bn-item'+(active?' active':'')+'" data-show="'+item.id+'" style="'+(active?'--bn-active-color:'+item.color:'')+';" onclick="showView(\''+item.id+'\')">'
@@ -4342,6 +4387,8 @@ function renderImpostazioni(){
   var soundEl = document.getElementById('soundToggle');
   if(soundEl) soundEl.checked = soundOn;
 
+  var pwdSection=document.getElementById('ownPasswordSection');
+  if(pwdSection) pwdSection.style.display=canChangeOwnPassword()?'':'none';
   var msg=document.getElementById('ownPassMsg');
   if(msg){ msg.textContent=''; msg.className='form-note'; }
   ['ownPassCurrent','ownPassNew','ownPassConfirm'].forEach(function(id){
@@ -4357,7 +4404,7 @@ function toggleOwnPasswordField(btn,inputId){
 }
 
 async function changeOwnPassword(){
-  if(!currentUser) return;
+  if(!currentUser || !canChangeOwnPassword()) return;
   var curr=document.getElementById('ownPassCurrent');
   var next=document.getElementById('ownPassNew');
   var conf=document.getElementById('ownPassConfirm');
@@ -5404,8 +5451,8 @@ function _isLightColor(hex){
       <div class="fg"><label>Username *</label><input type="text" id="eu-user"></div>
       <div class="fg"><label>Nuova Password</label><input type="password" id="eu-pass" placeholder="Lascia vuoto = invariata"></div>
       <div class="fg"><label>Sesso</label><select id="eu-sesso"><option value="m">&#9794; Uomo</option><option value="f">&#9792; Donna</option></select></div>
-      <div class="fg"><label>Ruolo</label><select id="eu-role"><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="performer">Performer</option><option value="choreographer">Choreographer</option><option value="guest">Guest</option><option value="admin">Admin</option></select></div>
-      <div class="fg"><label>Badge visivo (opzionale)</label><select id="eu-displayRole"><option value="">— Uguale al ruolo —</option><option value="performer">Performer</option><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="choreographer">Choreographer</option></select></div>
+      <div class="fg"><label>Ruolo effettivo (permessi)</label><select id="eu-role"><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="performer">Performer</option><option value="choreographer">Choreographer</option><option value="guest">Guest</option><option value="admin">Admin</option></select></div>
+      <div class="fg"><label>Badge visivo (opzionale)</label><select id="eu-displayRole"><option value="">— Uguale al ruolo —</option><option value="performer">Performer</option><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="choreographer">Choreographer</option></select><div style="margin-top:0.35rem;font-size:0.68rem;color:var(--dimtext);line-height:1.35">Solo estetico. I permessi restano quelli del ruolo effettivo.</div></div>
       <div class="fg" style="grid-column:1/-1"><label>Sezioni</label><div class="section-check-grid">
         <label class="section-check"><input type="checkbox" id="eu-sec-kpop"> <span>K-POP</span></label>
         <label class="section-check"><input type="checkbox" id="eu-sec-freddie"> <span>Freddie</span></label>
@@ -5465,7 +5512,6 @@ function _isLightColor(hex){
 <div class="layout">
   <aside>
     <div class="nav-group-label">Generali</div>
-    <div class="nav-item" data-show="home" onclick="showView('home')" style="display:none"><span class="nav-dot" style="background:#ffffff"></span> Dashboard</div>
     <div class="nav-item" data-show="calendar" onclick="showView('calendar')">
       <span class="nav-dot" style="background:#f59e0b"></span> Calendario
     </div>
@@ -5501,12 +5547,6 @@ function _isLightColor(hex){
   <div class="content">
 
     <!-- CALENDARIO -->
-    <!-- HOME VIEW -->
-    <div id="view-home" class="view">
-      <div class="page-header"><div><div class="page-title">Dashboard</div><div class="page-sub">Benvenuto</div></div></div>
-      <div class="home-wrap" id="homeWrap"></div>
-    </div>
-
     <div id="view-calendar" class="view" style="--accent:var(--calendar)">
       <div class="page-header">
         <div>
@@ -5556,8 +5596,8 @@ function _isLightColor(hex){
           <div class="fg"><label>Username *</label><input type="text" id="u-user" placeholder="mario.rossi"></div>
           <div class="fg"><label>Password *</label><input type="password" id="u-pass" placeholder="••••••••"></div>
           <div class="fg"><label>Sesso</label><select id="u-sesso"><option value="m">&#9794; Uomo</option><option value="f">&#9792; Donna</option></select></div>
-          <div class="fg"><label>Ruolo</label><select id="u-role"><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="performer">Performer</option><option value="choreographer">Choreographer</option><option value="guest">Guest</option><option value="admin">Admin</option></select></div>
-          <div class="fg"><label>Badge visivo (opzionale)</label><select id="u-displayRole"><option value="">— Uguale al ruolo —</option><option value="performer">Performer</option><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="choreographer">Choreographer</option></select></div>
+          <div class="fg"><label>Ruolo effettivo (permessi)</label><select id="u-role"><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="performer">Performer</option><option value="choreographer">Choreographer</option><option value="guest">Guest</option><option value="admin">Admin</option></select></div>
+          <div class="fg"><label>Badge visivo (opzionale)</label><select id="u-displayRole"><option value="">— Uguale al ruolo —</option><option value="performer">Performer</option><option value="dancer">Dancer</option><option value="guitarist">Guitarist</option><option value="staff">Staff</option><option value="choreographer">Choreographer</option></select><div style="margin-top:0.35rem;font-size:0.68rem;color:var(--dimtext);line-height:1.35">Solo estetico. I permessi restano quelli del ruolo effettivo.</div></div>
           <div class="fg" style="grid-column:1/-1"><label>Sezioni</label><div class="section-check-grid">
             <label class="section-check"><input type="checkbox" id="u-sec-kpop"> <span>K-POP</span></label>
             <label class="section-check"><input type="checkbox" id="u-sec-freddie"> <span>Freddie</span></label>
@@ -5645,7 +5685,7 @@ function _isLightColor(hex){
           <div class="impo-themes-grid" id="themesGrid"></div>
         </div>
         <!-- PASSWORD -->
-        <div class="impo-section impo-password-section">
+        <div class="impo-section impo-password-section" id="ownPasswordSection">
           <div class="impo-section-title">&#128274; Password</div>
           <div class="impo-password-stack">
             <div class="fg">
