@@ -2757,6 +2757,7 @@ function renderDateItem(d, showId, loc, extraTimes){
     else if(typeof e === 'string') allReplicas.push({ora:e, id:d.id, loc:loc||{}});
   });
   allReplicas=allReplicas.filter(function(r){ return r.ora; });
+  allReplicas.sort(function(a,b){ return (a.ora||'').localeCompare(b.ora||''); });
 
   var pastChip=isPast?' <span class="past-chip">&#10003;</span>':"";
   var pendingChip="";
@@ -3650,6 +3651,7 @@ function renderListRow(g){
     else if(typeof e==='string') allReplicas.push({ora:e, id:d.id, loc:loc});
   });
   allReplicas=allReplicas.filter(function(r){ return r.ora; });
+  allReplicas.sort(function(a,b){ return (a.ora||'').localeCompare(b.ora||''); });
 
   function makeTimeCell(r){
     return '<span style="font-family:\'Outfit\',sans-serif;font-weight:500">'+esc(r.ora)+'</span>';
@@ -4082,6 +4084,7 @@ function continueFromWelcome(){
 }
 function finalizeLogin(user){
   currentUser=user;
+  setTimeout(initPresence, 500);
   var login=document.getElementById('loginOverlay');
   if(login) login.classList.add('is-exiting');
   applySession();
@@ -6346,6 +6349,107 @@ function renderHome(){
 }
 
 
+// ══════ PRESENZA ONLINE ══════
+var _presenceChannel = null;
+var _onlinePanelOpen = false;
+
+function initPresence(){
+  if(!currentUser) return;
+  var sb = getSB(); if(!sb) return;
+  if(_presenceChannel){ try{ sb.removeChannel(_presenceChannel); }catch(e){} }
+
+  _presenceChannel = sb.channel('online-users', {
+    config: { presence: { key: String(currentUser.id) } }
+  });
+
+  _presenceChannel
+    .on('presence', { event: 'sync' }, function(){
+      updateOnlineUI();
+    })
+    .subscribe(function(status){
+      if(status === 'SUBSCRIBED'){
+        _presenceChannel.track({
+          id: currentUser.id,
+          nome: currentUser.nome || currentUser.username,
+          role: currentUser.role,
+          displayRole: currentUser.displayRole || currentUser.role,
+          ts: Date.now()
+        });
+      }
+    });
+}
+
+function getOnlineUsers(){
+  if(!_presenceChannel) return [];
+  try{
+    var state = _presenceChannel.presenceState();
+    var users = [];
+    Object.values(state).forEach(function(arr){
+      arr.forEach(function(u){ users.push(u); });
+    });
+    // deduplicate by id
+    var seen = {};
+    return users.filter(function(u){
+      if(seen[u.id]) return false;
+      seen[u.id] = true;
+      return true;
+    });
+  }catch(e){ return []; }
+}
+
+function updateOnlineUI(){
+  var users = getOnlineUsers();
+  var btn = document.getElementById('onlineUsersBtn');
+  var countEl = document.getElementById('onlineCount');
+  var isAdmin = currentUser && (currentUser.role==='admin'||currentUser.role==='choreographer');
+  if(btn){
+    btn.style.display = isAdmin ? 'inline-flex' : 'none';
+    if(countEl) countEl.textContent = users.length;
+  }
+  if(_onlinePanelOpen) renderOnlineList(users);
+}
+
+function renderOnlineList(users){
+  var list = document.getElementById('onlineList');
+  if(!list) return;
+  if(!users || !users.length){
+    list.innerHTML = '<div style="font-size:0.8rem;color:var(--dimtext)">Nessun utente online</div>';
+    return;
+  }
+  var ROLE_LABELS = {admin:'Admin',choreographer:'Choreo',performer:'Performer',dancer:'Dancer',staff:'Staff',guest:'Guest',guitarist:'Guitarist'};
+  var ROLE_COLORS = {admin:'#e8000d',choreographer:'#f97316',performer:'#4ec9f0',dancer:'#0ea5e9',staff:'#10b981',guest:'#6b7280',guitarist:'#8b5cf6'};
+  list.innerHTML = users.map(function(u){
+    var role = u.displayRole || u.role || 'guest';
+    var color = ROLE_COLORS[role] || 'var(--dimtext)';
+    var label = ROLE_LABELS[role] || role;
+    var isMe = currentUser && String(u.id) === String(currentUser.id);
+    return '<div style="display:flex;align-items:center;gap:0.6rem">'
+      +'<span style="width:7px;height:7px;border-radius:50%;background:#10b981;flex-shrink:0;box-shadow:0 0 5px #10b981"></span>'
+      +'<span style="font-size:0.85rem;color:var(--white);font-weight:'+(isMe?'700':'400')+'">'+esc(u.nome||u.username||'?')+(isMe?' <span style="font-size:0.65rem;color:var(--dimtext)">(tu)</span>':'')+'</span>'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;color:'+color+';margin-left:auto;background:'+color+'18;border:1px solid '+color+'44;border-radius:4px;padding:0.1rem 0.35rem">'+label+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function toggleOnlinePanel(){
+  var panel = document.getElementById('onlinePanel');
+  if(!panel) return;
+  _onlinePanelOpen = !_onlinePanelOpen;
+  panel.style.display = _onlinePanelOpen ? 'block' : 'none';
+  if(_onlinePanelOpen) renderOnlineList(getOnlineUsers());
+}
+
+// Close panel on outside click
+document.addEventListener('click', function(e){
+  if(!_onlinePanelOpen) return;
+  var panel = document.getElementById('onlinePanel');
+  var btn = document.getElementById('onlineUsersBtn');
+  if(panel && !panel.contains(e.target) && btn && !btn.contains(e.target)){
+    _onlinePanelOpen = false;
+    panel.style.display = 'none';
+  }
+});
+
 // ══════ INIT ══════
 window.addEventListener('DOMContentLoaded', function(){
   loadTheme();
@@ -7043,6 +7147,10 @@ function _isLightColor(hex){
 <body>
 
 <div id="toast"></div>
+<div id="onlinePanel" style="display:none;position:fixed;top:56px;right:12px;z-index:3000;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:1rem 1.2rem;min-width:220px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:0.52rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--dimtext);margin-bottom:0.8rem">Utenti online</div>
+  <div id="onlineList" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+</div>
 
 <nav class="bottom-nav" id="bottomNav">
   <div class="bn-scroll-arrow left"  id="bnArrowL" onclick="scrollBottomNav(-1)">&#8249;</div>
@@ -7312,6 +7420,9 @@ function _isLightColor(hex){
     <div class="current-user-bar" id="currentUserBar" style="display:none">
       <div class="user-avatar header-user-avatar" id="currentUserAvatar">—</div>
       <span id="currentUserLabel">—</span>
+      <button class="online-btn" id="onlineUsersBtn" type="button" onclick="toggleOnlinePanel()" title="Utenti online" aria-label="Utenti online" style="display:none">
+        <span class="online-dot"></span><span id="onlineCount">0</span>
+      </button>
       <button class="refresh-btn" id="refreshAppBtn" type="button" onclick="refreshAppData(this)" title="Aggiorna dati" aria-label="Aggiorna dati">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path fill="currentColor" d="M12 5a7 7 0 0 1 6.33 4H16.5a1 1 0 0 0-.67 1.74l3.5 3.2a1 1 0 0 0 1.67-.74V8.7a1 1 0 0 0-1.67-.74l-.27.24A9 9 0 0 0 3.3 10.9a1 1 0 1 0 1.94.5A7 7 0 0 1 12 5Zm6.76 7.6a1 1 0 0 0-1.2.74A7 7 0 0 1 5.67 15H7.5a1 1 0 0 0 .67-1.74l-3.5-3.2A1 1 0 0 0 3 10.8v4.5a1 1 0 0 0 1.67.74l.27-.24A9 9 0 0 0 20.7 13.1a1 1 0 0 0-.74-1.2Z"/>
@@ -7807,6 +7918,24 @@ function _isLightColor(hex){
 }
 .confirm-flag-row input[type="checkbox"]{
   width:24px !important; height:24px !important; margin:0; accent-color:var(--amber); flex:0 0 auto;
+}
+.online-btn {
+  display:inline-flex;align-items:center;gap:0.35rem;
+  background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);
+  color:#10b981;border-radius:8px;padding:0.25rem 0.6rem;
+  font-size:0.75rem;font-weight:700;cursor:pointer;
+  font-family:'Outfit',sans-serif;line-height:1;
+  transition:background 0.15s;
+}
+.online-btn:hover { background:rgba(16,185,129,0.22); }
+.online-dot {
+  width:7px;height:7px;border-radius:50%;
+  background:#10b981;display:inline-block;
+  box-shadow:0 0 6px #10b981;
+  animation:onlinePulse 2s infinite;
+}
+@keyframes onlinePulse {
+  0%,100%{opacity:1} 50%{opacity:0.5}
 }
 .confirm-flag-row span{
   font-family:'Outfit',sans-serif !important; font-size:0.95rem !important; font-weight:700;
