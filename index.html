@@ -2483,6 +2483,7 @@ const PARTECIPANTI = [
 // ══════ STATE ══════
 let state = { date:{}, cast:{}, location:{}, presenze:{}, staffLists:{}, userAvatars:{}, castProve:[], castVideos:[] };
 Object.keys(SHOWS).forEach(k=>{ state.date[k]=[]; state.cast[k]=[]; });
+  if(!state.deletedIds) state.deletedIds=[];
 
 function save(opts){ localStorage.setItem("msrls_v5",JSON.stringify(state)); if(!(opts&&opts.noSync)) scheduleSync(); }
 function load(){
@@ -2847,8 +2848,28 @@ function renderDateItem(d, showId, loc, extraTimes){
     +'<div style="font-size:0.62rem;color:var(--dimtext);margin-top:0.3rem">Consigliato: JPG/PNG sotto 500KB</div>'
     +'</div>';
 
+  // Orari / Repliche section (admin only)
+  var orariSection='';
+  if(_canAdmin){
+    var orariRows=allReplicas.map(function(r){
+      var removeBtn='<button onclick="event.stopPropagation();rimuoviReplica(\''+showId+'\',\''+r.id+'\')" style="background:none;border:none;color:rgba(248,113,113,0.6);font-size:1rem;cursor:pointer;padding:0 0 0 0.4rem;line-height:1;flex-shrink:0" title="Rimuovi orario">&#10005;</button>';
+      return '<div class="lf" style="flex-direction:row;align-items:center;gap:0;margin-bottom:0.35rem">'
+        +'<input type="time" value="'+esc(r.ora||'')+'" style="width:7.5rem;flex-shrink:0" onchange="event.stopPropagation();aggiornaOraReplica(\''+showId+'\',\''+r.id+'\',this.value)" onclick="event.stopPropagation()">'
+        +removeBtn
+        +'</div>';
+    }).join('');
+    orariSection='<div class="loc-fields" style="margin-top:0">'
+      +'<div class="lf" style="grid-column:1/-1"><label>&#9200; Orari / Repliche</label></div>'
+      +orariRows
+      +'<div class="lf" style="flex-direction:row;align-items:center;gap:0.5rem;grid-column:1/-1;margin-top:0.1rem">'
+      +'<input type="time" id="newOra-'+d.id+'" style="width:7.5rem;flex-shrink:0" onclick="event.stopPropagation()">'
+      +'<button onclick="event.stopPropagation();aggiungiReplica(\''+showId+'\',\''+d.id+'\',\''+d.data+'\')" style="background:rgba(169,125,250,0.12);border:1px solid rgba(169,125,250,0.4);color:var(--calendar);border-radius:7px;padding:0.42rem 0.9rem;font-size:0.82rem;cursor:pointer;font-family:\'Outfit\',sans-serif;white-space:nowrap">+ Aggiungi orario</button>'
+      +'</div>'
+      +'</div>';
+  }
+
   var locSection=_canAdmin
-    ?'<div class="sec-label">Location</div>'+locPanel+travelPanel+locandinaPanel
+    ?orariSection+'<div class="sec-label">Location</div>'+locPanel+travelPanel+locandinaPanel
     :'<div class="sec-label">Location</div><div style="font-size:0.88rem;color:var(--text)">'+(teatro?'<strong>'+esc(teatroDisplay)+'</strong>':'')+((teatro&&citta)?' &mdash; ':'')+esc(getCityDisplay(d.id, citta))+'</div>'+travelDisplay;
 
   var rdSection=_canAdmin
@@ -2975,7 +2996,28 @@ function toggleDetail(dateId, showId){
 
 function saveLoc(dateId, field, val){
   if(!state.location[dateId]) state.location[dateId]={};
-  state.location[dateId][field] = val; save();
+  state.location[dateId][field] = val;
+  // If updating teatro name, propagate to all replicas of the same day
+  if(field==='nome'){
+    var showId=null;
+    Object.keys(state.date||{}).forEach(function(sid){
+      if((state.date[sid]||[]).find(function(x){return x.id===dateId;})) showId=sid;
+    });
+    if(showId){
+      var primary=state.date[showId].find(function(x){return x.id===dateId;});
+      if(primary){
+        state.date[showId].forEach(function(x){
+          if(x.data===primary.data && x.id!==dateId){
+            if(!state.location[x.id]) state.location[x.id]={};
+            state.location[x.id].nome=val;
+          }
+        });
+      }
+    }
+  }
+  save();
+  if(typeof renderCalendar==='function') renderCalendar();
+  if(typeof renderCalList==='function') renderCalList();
 }
 
 function canvasToBlob(canvas, type, quality){
@@ -3112,8 +3154,24 @@ async function locandinaShare(){
   }
 }
 function syncCitta(dateId, showId, val){
-  const d = state.date[showId].find(x=>x.id===dateId);
-  if(d){ d.citta=val; save(); }
+  // Find the primary date to get its data string
+  var primary = state.date[showId].find(x=>x.id===dateId);
+  if(!primary) return;
+  var dataStr = primary.data;
+  // Update d.citta on ALL replicas of that day (same show, same date)
+  state.date[showId].forEach(function(x){
+    if(x.data===dataStr) x.citta=val;
+  });
+  // Also sync into state.location for each replica
+  state.date[showId].forEach(function(x){
+    if(x.data===dataStr){
+      if(!state.location[x.id]) state.location[x.id]={};
+      state.location[x.id].citta=val;
+    }
+  });
+  save();
+  if(typeof renderCalendar==='function') renderCalendar();
+  if(typeof renderCalList==='function') renderCalList();
 }
 
 function addAtt(dateId, showId){
@@ -3178,15 +3236,70 @@ function salvaData(id){
   });
   if(teatroVal){ if(!state.location[newId])state.location[newId]={}; state.location[newId].nome=teatroVal; }
   save(); toast("Data aggiunta"); renderShow(id); updateHeaderStats();
+  if(typeof renderCalendar==='function') renderCalendar();
+  if(typeof renderCalList==='function') renderCalList();
 }
 function eliminaData(showId, dateId){
   showConfirmModal("Eliminare questa data?", "Questa azione non può essere annullata.", function(){
     if(!state.date[showId]) return;
     state.date[showId] = state.date[showId].filter(x=>x.id!==dateId);
     delete state.presenze[dateId]; delete state.location[dateId];
-    save(); toast("Data eliminata"); renderShow(showId); updateHeaderStats();
+    // Permanently record this deletion so seedDates never re-adds it from any device
+    if(!state.deletedIds) state.deletedIds=[];
+    if(state.deletedIds.indexOf(dateId)===-1) state.deletedIds.push(dateId);
+    localStorage.setItem('msrls_v5', JSON.stringify(state));
+    scheduleSync(true);
+    toast("Data eliminata"); renderShow(showId); updateHeaderStats();
+    if(typeof renderCalendar==='function') renderCalendar();
+    if(typeof renderCalList==='function') renderCalList();
   });
 }
+function aggiungiReplica(showId, primaryId, dataStr){
+  var inp=document.getElementById('newOra-'+primaryId);
+  var ora=inp?inp.value.trim():'';
+  if(!ora){ toast('Inserisci un orario'); return; }
+  // Check not duplicate
+  var existing=(state.date[showId]||[]).filter(function(x){ return x.data===dataStr; }).map(function(x){ return x.ora; });
+  if(existing.indexOf(ora)!==-1){ toast('Orario già presente'); return; }
+  var newId=uid();
+  var primaryDate=state.date[showId].find(function(x){return x.id===primaryId;});
+  state.date[showId].push({id:newId, data:dataStr, ora:ora, tipo:'Replica', citta:(primaryDate||{}).citta||'', desc:''});
+  // Sort all entries of this day chronologically
+  state.date[showId].sort(function(a,b){ return a.data.localeCompare(b.data)||(a.ora||'').localeCompare(b.ora||''); });
+  if(inp) inp.value='';
+  localStorage.setItem('msrls_v5', JSON.stringify(state));
+  scheduleSync(true);
+  toast('Orario aggiunto'); renderShow(showId); updateHeaderStats();
+  // re-open the detail panel
+  setTimeout(function(){ var dd=document.getElementById('dd-'+primaryId); if(dd&&!dd.classList.contains('open')){ toggleDetail(primaryId,showId); } },80);
+}
+function rimuoviReplica(showId, dateId){
+  var dates=state.date[showId]||[];
+  var target=dates.find(function(x){ return x.id===dateId; });
+  if(!target){ toast('Data non trovata'); return; }
+  showConfirmModal('Rimuovere la replica delle '+esc(target.ora)+'?','Questa azione non può essere annullata.',function(){
+    state.date[showId]=dates.filter(function(x){ return x.id!==dateId; });
+    delete state.presenze[dateId]; delete state.location[dateId];
+    if(!state.deletedIds) state.deletedIds=[];
+    if(state.deletedIds.indexOf(dateId)===-1) state.deletedIds.push(dateId);
+    localStorage.setItem('msrls_v5', JSON.stringify(state));
+    scheduleSync(true);
+    toast('Orario rimosso'); renderShow(showId); updateHeaderStats();
+  });
+}
+function aggiornaOraReplica(showId, dateId, newOra){
+  var dates=state.date[showId]||[];
+  var target=dates.find(function(x){ return x.id===dateId; });
+  if(!target) return;
+  target.ora=newOra;
+  // Re-sort chronologically
+  state.date[showId].sort(function(a,b){ return a.data.localeCompare(b.data)||(a.ora||'').localeCompare(b.ora||''); });
+  // Sync immediato per evitare sovrascrittura dal cloud
+  localStorage.setItem('msrls_v5', JSON.stringify(state));
+  scheduleSync(true);
+  toast('Orario aggiornato'); renderShow(showId);
+}
+
 function showConfirmModal(title, msg, onConfirm){
   var existing=document.getElementById('_confirmModal');
   if(existing) existing.parentNode.removeChild(existing);
@@ -3631,6 +3744,9 @@ function renderListRow(g){
 
 function addDateIfMissing(showId, entry){
   if(!state.date[showId]) state.date[showId]=[];
+  if(!state.deletedIds) state.deletedIds=[];
+  // Never re-add a date that was explicitly deleted by an admin
+  if(state.deletedIds.indexOf(entry.id)!==-1) return;
   if(!state.date[showId].find(x=>x.id===entry.id)){
     state.date[showId].push(entry);
   }
@@ -3675,7 +3791,6 @@ function seedDates(){
   addDateIfMissing('michael', {"id": "0311ae9e", "data": "2026-04-04", "ora": "21:00", "tipo": "Replica", "citta": "Messina", "desc": "", "past": true});
   addDateIfMissing('michael', {"id": "dff160d7", "data": "2026-05-08", "ora": "21:00", "tipo": "Replica", "citta": "Olbia", "desc": "", "past": false});
   addDateIfMissing('michael', {"id": "f51a3fa9", "data": "2026-05-24", "ora": "21:15", "tipo": "Replica", "citta": "Martina Franca", "desc": "", "past": false});
-  addDateIfMissing('michael', {"id": "0ed11066", "data": "2026-07-25", "ora": "21:00", "tipo": "Replica", "citta": "Zafferana", "desc": "", "past": false});
   addDateIfMissing('michael', {"id": "68007710", "data": "2026-08-12", "ora": "21:00", "tipo": "Replica", "citta": "Malta", "desc": "", "past": false});
   // freddie: 3 dates
   addDateIfMissing('freddie', {"id": "09eaae66", "data": "2026-03-07", "ora": "21:00", "tipo": "Replica", "citta": "Ragusa", "desc": "", "past": true});
@@ -6248,11 +6363,12 @@ window.addEventListener('DOMContentLoaded', function(){
     ensureDefaultAdmin();
     seedDates();
     _suspendSync = false;
-    save();
+    // Solo aggiorna localStorage, NON sincronizza su cloud (evita sovrascrittura di modifiche in volo)
+    localStorage.setItem('msrls_v5', JSON.stringify(state));
   }).catch(function(){
     _cloudLoaded=true;
     _suspendSync = false;
-    save();
+    localStorage.setItem('msrls_v5', JSON.stringify(state));
   });
 });
 </script>
