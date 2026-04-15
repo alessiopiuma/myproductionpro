@@ -2360,10 +2360,10 @@ async function sbSaveUsers(users){
 }
 var _syncT=null;
 var _suspendSync=false;
-function scheduleSync(){
+function scheduleSync(immediate){
   if(_suspendSync) return;
   if(_syncT) clearTimeout(_syncT);
-  _syncT=setTimeout(doSync,2000);
+  _syncT=setTimeout(doSync, immediate ? 100 : 2000);
 }
 async function doSync(){
   try{
@@ -3180,10 +3180,31 @@ function salvaData(id){
   save(); toast("Data aggiunta"); renderShow(id); updateHeaderStats();
 }
 function eliminaData(showId, dateId){
-  if(!confirm("Eliminare questa data?")) return;
-  state.date[showId] = state.date[showId].filter(x=>x.id!==dateId);
-  delete state.presenze[dateId]; delete state.location[dateId];
-  save(); toast("Data eliminata"); renderShow(showId); updateHeaderStats();
+  showConfirmModal("Eliminare questa data?", "Questa azione non può essere annullata.", function(){
+    if(!state.date[showId]) return;
+    state.date[showId] = state.date[showId].filter(x=>x.id!==dateId);
+    delete state.presenze[dateId]; delete state.location[dateId];
+    save(); toast("Data eliminata"); renderShow(showId); updateHeaderStats();
+  });
+}
+function showConfirmModal(title, msg, onConfirm){
+  var existing=document.getElementById('_confirmModal');
+  if(existing) existing.parentNode.removeChild(existing);
+  var el=document.createElement('div');
+  el.id='_confirmModal';
+  el.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)';
+  el.innerHTML='<div style="background:var(--surface1,#1a1a2e);border:1px solid var(--border,#333);border-radius:14px;padding:1.5rem 1.8rem;max-width:320px;width:90%;text-align:center">'
+    +'<div style="font-size:1.05rem;font-weight:700;color:var(--white,#fff);margin-bottom:0.5rem">'+title+'</div>'
+    +(msg?'<div style="font-size:0.83rem;color:var(--dimtext,#888);margin-bottom:1.2rem">'+msg+'</div>':'<div style="margin-bottom:1.2rem"></div>')
+    +'<div style="display:flex;gap:0.7rem;justify-content:center">'
+    +'<button id="_confirmNo" style="flex:1;padding:0.6rem;border-radius:8px;border:1px solid var(--border,#333);background:transparent;color:var(--white,#fff);cursor:pointer;font-size:0.9rem">Annulla</button>'
+    +'<button id="_confirmYes" style="flex:1;padding:0.6rem;border-radius:8px;border:none;background:#e8000d;color:#fff;cursor:pointer;font-size:0.9rem;font-weight:700">Elimina</button>'
+    +'</div></div>';
+  document.body.appendChild(el);
+  function close(){ if(el.parentNode) el.parentNode.removeChild(el); }
+  document.getElementById('_confirmNo').onclick=close;
+  document.getElementById('_confirmYes').onclick=function(){ close(); onConfirm(); };
+  el.addEventListener('click',function(e){ if(e.target===el) close(); });
 }
 
 // ══════ CAST ══════
@@ -3699,7 +3720,7 @@ function saveUsers(u,opts){
     localStorage.removeItem('msrls_users');
     localStorage.removeItem('msrls_users_cache');
   }catch(e){}
-  if(!(opts&&opts.noSync)) scheduleSync();
+  if(!(opts&&opts.noSync)) scheduleSync(true);
 }
 function ensureDefaultAdmin(){
   try{
@@ -4073,9 +4094,10 @@ async function refreshAppData(btn){
 function applySession(){
   if(!currentUser) return;
   var bar=document.getElementById('currentUserBar'); bar.style.display='flex';
-  var roleMeta=getRoleMeta(currentUser.role);
+  var visibleRole=currentUser.displayRole||currentUser.role;
+  var roleMeta=getRoleMeta(visibleRole);
   var roleLabel=roleMeta.label;
-  if(currentUser && currentUser.role==='choreographer') roleLabel='Choreo';
+  if(visibleRole==='choreographer') roleLabel='Choreo';
   var roleColor=roleMeta.color;
   document.getElementById('currentUserLabel').innerHTML='<strong>'+esc(currentUser.nome)+'</strong>&nbsp;<span style="font-size:0.65rem;background:'+roleColor+'22;border-radius:4px;padding:0.1rem 0.4rem;color:'+roleColor+'">'+roleLabel+'</span>';
   refreshAvatarUI();
