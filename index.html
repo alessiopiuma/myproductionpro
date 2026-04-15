@@ -2263,6 +2263,7 @@ body.light-ui #view-calendar .lrm-dot{ color:rgba(0,0,0,0.45) !important; opacit
 <script>
 // ══════ SUPABASE ══════
 var _SB = null;
+var SB_STORAGE_BUCKET = 'locandine';
 function getSB(){
   if(_SB) return _SB;
   try{ _SB = window.supabase.createClient(
@@ -2270,6 +2271,42 @@ function getSB(){
     'sb_publishable_kQkve7P4kbRuxRgLTwZ1mQ_lw74lgNM'
   ); }catch(e){ console.warn('Supabase init failed',e); }
   return _SB;
+}
+function getLocandinaSrc(loc){
+  if(!loc) return '';
+  if(loc.locandina) return loc.locandina;
+  if(loc.locandinaPath){
+    try{
+      var sb=getSB();
+      if(!sb) return '';
+      var r=sb.storage.from(SB_STORAGE_BUCKET).getPublicUrl(loc.locandinaPath);
+      return r&&r.data&&r.data.publicUrl?r.data.publicUrl:'';
+    }catch(e){
+      console.warn('getLocandinaSrc error',e);
+      return '';
+    }
+  }
+  return '';
+}
+function getLocandinaFileName(loc){
+  if(loc&&loc.locandinaPath){
+    var parts=String(loc.locandinaPath).split('/');
+    return parts[parts.length-1]||'locandina.jpg';
+  }
+  return 'locandina.jpg';
+}
+async function deleteStorageLocandina(path){
+  if(!path) return true;
+  var sb=getSB();
+  if(!sb) return false;
+  try{
+    var r=await sb.storage.from(SB_STORAGE_BUCKET).remove([path]);
+    if(r&&r.error){ console.warn('deleteStorageLocandina error',r.error); return false; }
+    return true;
+  }catch(e){
+    console.warn('deleteStorageLocandina error',e);
+    return false;
+  }
 }
 async function sbGet(key){
   var sb=getSB(); if(!sb) return null;
@@ -2799,11 +2836,12 @@ function renderDateItem(d, showId, loc, extraTimes){
     +'</div>';
 
   // Locandina upload (admin only)
+  var locandinaSrc=getLocandinaSrc(loc);
   var locandinaPanel='<div style="margin-top:1rem">'
     +'<div class="sec-label">🖼 Locandina</div>'
-    +(loc&&loc.locandina
-      ?'<div style="margin:0.5rem 0"><img src="'+loc.locandina+'" style="max-width:160px;max-height:120px;border-radius:6px;border:1px solid var(--border)"></div>'
-        +'<button class="btn btn-ghost btn-sm" style="color:var(--red);margin-bottom:0.4rem" onclick="saveLoc(\''+d.id+'\',\'locandina\',\'\');renderShow(\''+showId+'\')">✕ Rimuovi</button><br>'
+    +(locandinaSrc
+      ?'<div style="margin:0.5rem 0"><img src="'+esc(locandinaSrc)+'" style="max-width:160px;max-height:120px;border-radius:6px;border:1px solid var(--border)"></div>'
+        +'<button class="btn btn-ghost btn-sm" style="color:var(--red);margin-bottom:0.4rem" onclick="removeLocandina(\''+d.id+'\',\''+showId+'\')">✕ Rimuovi</button><br>'
       :'')
     +'<input type="file" accept="image/*" style="font-size:0.75rem;color:var(--dimtext)" onchange="uploadLocandina(\''+d.id+'\',\''+showId+'\',this)">'
     +'<div style="font-size:0.62rem;color:var(--dimtext);margin-top:0.3rem">Consigliato: JPG/PNG sotto 500KB</div>'
@@ -2820,7 +2858,7 @@ function renderDateItem(d, showId, loc, extraTimes){
 
   // Poster button — lives inside date-cells, last cell, always inline
   var cameraSvg='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
-  var posterCell=(loc&&loc.locandina)
+  var posterCell=locandinaSrc
     ?'<div class="date-cell" style="border-right:none;padding:0 0.6rem;flex-shrink:0"><button class="btn btn-ghost btn-sm" style="padding:0.15rem 0.3rem;display:inline-flex;align-items:center;border:none" onclick="event.stopPropagation();openLocandina(\''+d.id+'\')" title="Vedi locandina">'+cameraSvg+'</button></div>'
     :'';
 
@@ -2940,33 +2978,77 @@ function saveLoc(dateId, field, val){
   state.location[dateId][field] = val; save();
 }
 
-function uploadLocandina(dateId, showId, input){
-  var file=input.files[0]; if(!file) return;
+function canvasToBlob(canvas, type, quality){
+  return new Promise(function(resolve, reject){
+    canvas.toBlob(function(blob){
+      if(blob) resolve(blob);
+      else reject(new Error('Canvas toBlob failed'));
+    }, type, quality);
+  });
+}
+async function removeLocandina(dateId, showId){
+  var loc=state.location[dateId]||{};
+  if(loc.locandinaPath) await deleteStorageLocandina(loc.locandinaPath);
+  if(!state.location[dateId]) state.location[dateId]={};
+  state.location[dateId].locandina='';
+  state.location[dateId].locandinaPath='';
+  save();
+  toast('Locandina rimossa');
+  if(showId) renderShow(showId);
+}
+async function uploadLocandina(dateId, showId, input){
+  var file=input&&input.files&&input.files[0];
+  if(!file) return;
+  var sb=getSB();
+  if(!sb){
+    toast('Supabase non disponibile');
+    return;
+  }
   var reader=new FileReader();
   reader.onload=function(e){
     var img=new Image();
-    img.onload=function(){
-      var canvas=document.createElement('canvas');
-      var MAX_W=1200, MAX_H=1600;
-      var w=img.width, h=img.height;
-      // Scale down if needed
-      if(w>MAX_W||h>MAX_H){
-        var ratio=Math.min(MAX_W/w, MAX_H/h);
-        w=Math.round(w*ratio); h=Math.round(h*ratio);
+    img.onload=async function(){
+      try{
+        var canvas=document.createElement('canvas');
+        var MAX_W=1200, MAX_H=1600;
+        var w=img.width, h=img.height;
+        if(w>MAX_W||h>MAX_H){
+          var ratio=Math.min(MAX_W/w, MAX_H/h);
+          w=Math.round(w*ratio); h=Math.round(h*ratio);
+        }
+        canvas.width=w; canvas.height=h;
+        var ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        var quality=0.92;
+        var blob=await canvasToBlob(canvas,'image/jpeg',quality);
+        while(blob.size > 500*1024 && quality > 0.3){
+          quality-=0.08;
+          blob=await canvasToBlob(canvas,'image/jpeg',quality);
+        }
+        var safeShow=String(showId||'show').replace(/[^a-z0-9_-]/gi,'_');
+        var safeDate=String(dateId||uid()).replace(/[^a-z0-9_-]/gi,'_');
+        var filePath='calendar/'+safeShow+'/'+safeDate+'/'+Date.now()+'-'+uid()+'.jpg';
+        var upload=await sb.storage.from(SB_STORAGE_BUCKET).upload(filePath, blob, {
+          contentType:'image/jpeg',
+          cacheControl:'3600',
+          upsert:false
+        });
+        if(upload&&upload.error) throw upload.error;
+        var pub=sb.storage.from(SB_STORAGE_BUCKET).getPublicUrl(filePath);
+        var publicUrl=pub&&pub.data&&pub.data.publicUrl?pub.data.publicUrl:'';
+        if(!state.location[dateId]) state.location[dateId]={};
+        var oldPath=state.location[dateId].locandinaPath||'';
+        state.location[dateId].locandina=publicUrl;
+        state.location[dateId].locandinaPath=filePath;
+        save();
+        if(oldPath && oldPath!==filePath) deleteStorageLocandina(oldPath);
+        toast('Locandina salvata ('+Math.round(blob.size/1024)+'KB)');
+        if(input) input.value='';
+        renderShow(showId);
+      }catch(err){
+        console.warn('uploadLocandina error',err);
+        toast('Errore upload locandina');
       }
-      canvas.width=w; canvas.height=h;
-      var ctx=canvas.getContext('2d');
-      ctx.drawImage(img,0,0,w,h);
-      // Compress progressively until under 500KB
-      var quality=0.92;
-      var result=canvas.toDataURL('image/jpeg',quality);
-      while(result.length > 666666 && quality > 0.3){ // ~500KB base64
-        quality-=0.08;
-        result=canvas.toDataURL('image/jpeg',quality);
-      }
-      saveLoc(dateId,'locandina',result);
-      toast('Locandina salvata ('+(Math.round(result.length*0.75/1024))+'KB)');
-      renderShow(showId);
     };
     img.src=e.target.result;
   };
@@ -2974,10 +3056,13 @@ function uploadLocandina(dateId, showId, input){
 }
 
 var _locandinaData='';
+var _locandinaFileName='locandina.jpg';
 function openLocandina(dateId){
   var loc=state.location[dateId]||{};
-  if(!loc.locandina) return;
-  _locandinaData=loc.locandina;
+  var src=getLocandinaSrc(loc);
+  if(!src) return;
+  _locandinaData=src;
+  _locandinaFileName=getLocandinaFileName(loc);
   document.getElementById('locandinaImg').src=_locandinaData;
   var modal=document.getElementById('locandinaModal');
   modal.style.display='flex';
@@ -2986,32 +3071,43 @@ function closeLocandina(){
   document.getElementById('locandinaModal').style.display='none';
   document.getElementById('locandinaImg').src='';
   _locandinaData='';
+  _locandinaFileName='locandina.jpg';
 }
-function locandinaSave(){
+async function locandinaSave(){
   if(!_locandinaData) return;
-  var a=document.createElement('a');
-  a.href=_locandinaData;
-  a.download='locandina.jpg';
-  a.click();
+  try{
+    var res=await fetch(_locandinaData);
+    var blob=await res.blob();
+    var objectUrl=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=objectUrl;
+    a.download=_locandinaFileName||'locandina.jpg';
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(objectUrl); }, 1200);
+  }catch(e){
+    var a=document.createElement('a');
+    a.href=_locandinaData;
+    a.target='_blank';
+    a.rel='noopener';
+    a.click();
+  }
 }
-function locandinaShare(){
+async function locandinaShare(){
   if(!_locandinaData) return;
-  // Use Web Share API on mobile if available
   if(navigator.share){
-    // Convert base64 to blob for sharing
     try{
-      var arr=_locandinaData.split(','), mime=arr[0].match(/:(.*?);/)[1];
-      var bstr=atob(arr[1]), n=bstr.length, u8=new Uint8Array(n);
-      for(var i=0;i<n;i++) u8[i]=bstr.charCodeAt(i);
-      var blob=new Blob([u8],{type:mime});
-      var file=new File([blob],'locandina.jpg',{type:mime});
-      navigator.share({files:[file],title:'Locandina'}).catch(function(){});
-    }catch(e){
-      // Fallback: share just the title
-      navigator.share({title:'Locandina spettacolo'}).catch(function(){});
-    }
+      var res=await fetch(_locandinaData);
+      var blob=await res.blob();
+      var file=new File([blob],_locandinaFileName||'locandina.jpg',{type:blob.type||'image/jpeg'});
+      if(!navigator.canShare || navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:'Locandina'});
+        return;
+      }
+    }catch(e){}
+    try{
+      await navigator.share({title:'Locandina spettacolo',url:_locandinaData});
+    }catch(e2){}
   } else {
-    // Desktop fallback: open share options
     toast('Usa il pulsante Salva e condividi dal tuo dispositivo mobile');
   }
 }
@@ -3426,7 +3522,8 @@ function renderListRow(g){
   }
   var timesHtml=allReplicas.map(makeTimeCell).join('<span style="margin:0 0.35rem;opacity:0.4">&middot;</span>');
 
-  var hasLocandina=loc&&loc.locandina;
+  var locandinaSrc=getLocandinaSrc(loc);
+  var hasLocandina=!!locandinaSrc;
   var cameraSvgL='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
   var posterCell=hasLocandina
     ?'<div class="date-cell calendar-poster-cell" style="border-right:none;flex-shrink:0"><button class="calendar-icon-btn" onclick="event.stopPropagation();openLocandina(\''+d.id+'\')" title="Vedi locandina">'+cameraSvgL+'</button></div>'
