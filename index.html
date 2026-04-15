@@ -2629,6 +2629,8 @@ function renderMonthGroups(dateEntries, showId){
   Object.keys(byMonth).forEach(function(mk){
     var evs=byMonth[mk]; var parts=mk.split("-"),y=parts[0],m=parts[1];
     var bds={};
+    // Sort by ora first so primary is always earliest replica of the day
+    evs.sort(function(a,b){ return a.d.data.localeCompare(b.d.data)||(a.d.ora||'').localeCompare(b.d.ora||''); });
     evs.forEach(function(ev){
       var k=ev.d.data+"||"+(ev.sid||showId);
       if(!bds[k]) bds[k]={primary:ev,extras:[]};
@@ -3588,6 +3590,8 @@ function renderCalList(){
       var monthName=MESI[parseInt(m)-1]+' '+y;
       // Group same-day same-show
       var bds={};
+      // Sort within the month by date+ora before grouping so primary is always earliest
+      evs.sort(function(a,b){ return a.d.data.localeCompare(b.d.data)||(a.d.ora||'').localeCompare(b.d.ora||''); });
       evs.forEach(function(ev){
         var k=ev.d.data+"||"+ev.sid;
         if(!bds[k]) bds[k]={primary:ev,extras:[]};
@@ -3742,6 +3746,26 @@ function renderListRow(g){
     +'</div>'
     +detailPanel
     +'</div>';
+}
+
+function openPdfBlob(dataUrl, name){
+  if(!dataUrl) return;
+  try{
+    // Convert base64 data URL to blob and open
+    var arr=dataUrl.split(','), mime=(arr[0].match(/:(.*?);/)||[])[1]||'application/pdf';
+    var bstr=atob(arr[1]||arr[0]), n=bstr.length, u8=new Uint8Array(n);
+    for(var i=0;i<n;i++) u8[i]=bstr.charCodeAt(i);
+    var blob=new Blob([u8],{type:mime});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.target='_blank'; a.rel='noopener';
+    a.download=name||'documento.pdf';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); document.body.removeChild(a); },2000);
+  }catch(e){
+    // Fallback: try direct open
+    try{ window.open(dataUrl,'_blank','noopener'); }catch(e2){ toast('Impossibile aprire il PDF'); }
+  }
 }
 
 function addDateIfMissing(showId, entry){
@@ -5308,14 +5332,14 @@ function openStaffModal(sid, day){
     body.innerHTML=''
       +'<textarea id="staffTextarea" class="staff-textarea" placeholder="Un oggetto per riga\nEs.\nRadiomicrofoni\nGuanti\nCappelli\nBase USB">'+esc(entry.text||'')+'</textarea>'
       +'<div class="staff-help">Inserisci un oggetto per riga. La lista viene salvata per tutta la giornata, anche se ci sono più repliche.</div>'
-      +(hasPdf?'<div class="staff-pdf-row"><a class="staff-pdf-link" href="'+entry.pdfData+'" target="_blank" rel="noopener">📄 '+esc(entry.pdfName||'PDF caricato')+'</a><button type="button" class="staff-pdf-remove" onclick="removeStaffPdf()">✕</button></div>':'')
+      +(hasPdf?'<div class="staff-pdf-row"><a class="staff-pdf-link" href="#" onclick="event.preventDefault();openPdfBlob(this.dataset.pdf,this.dataset.name)" data-pdf="'+entry.pdfData+'" data-name="'+esc(entry.pdfName||'PDF caricato')+'">📄 '+esc(entry.pdfName||'PDF caricato')+'</a><button type="button" class="staff-pdf-remove" onclick="removeStaffPdf()">✕</button></div>':'')
       +(entry.updatedAt?'<div class="staff-meta">Ultimo aggiornamento: '+esc(formatStaffTimestamp(entry.updatedAt))+(entry.updatedBy?' &mdash; '+esc(entry.updatedBy):'')+'</div>':'');
     if(saveBtn) saveBtn.style.display='';
   } else {
     body.innerHTML=''
       +(items.length
         ? '<div class="staff-list-read"><div class="staff-items">'+items.map(function(item){ return '<div class="staff-item"><span class="staff-item-check">✓</span><span>'+esc(item)+'</span></div>'; }).join('')+'</div>'
-          +(hasPdf?'<div class="staff-pdf-row" style="margin-top:.7rem"><a class="staff-pdf-link" href="'+entry.pdfData+'" target="_blank" rel="noopener">📄 '+esc(entry.pdfName||'Apri PDF')+'</a></div>':'')
+          +(hasPdf?'<div class="staff-pdf-row" style="margin-top:.7rem"><a class="staff-pdf-link" href="#" onclick="event.preventDefault();openPdfBlob(this.dataset.pdf,this.dataset.name)" data-pdf="'+entry.pdfData+'" data-name="'+esc(entry.pdfName||'Apri PDF')+'">📄 '+esc(entry.pdfName||'Apri PDF')+'</a></div>':'')
           +(entry.updatedAt?'<div class="staff-meta">Ultimo aggiornamento: '+esc(formatStaffTimestamp(entry.updatedAt))+(entry.updatedBy?' &mdash; '+esc(entry.updatedBy):'')+'</div>':'')
           +'</div>'
         : '<div class="staff-empty" style="padding:1.25rem 0">Nessuna lista inserita per questa data.'+(hasPdf?' <div class="staff-pdf-row" style="margin-top:.7rem"><a class="staff-pdf-link" href="'+entry.pdfData+'" target="_blank" rel="noopener">📄 '+esc(entry.pdfName||'Apri PDF')+'</a></div>':'')+'</div>');
@@ -5388,7 +5412,7 @@ function handleStaffPdfButton(){
     return;
   }
   if(entry && entry.pdfData){
-    window.open(entry.pdfData, '_blank', 'noopener');
+    openPdfBlob(entry.pdfData, entry.pdfName||'documento.pdf');
   }
 }
 function uploadStaffPdf(input){
