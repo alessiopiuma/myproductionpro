@@ -2610,6 +2610,7 @@ function showView(id){
   else if(id==="castprove"){ renderCastProve(); }
   else if(id==="castvideo"){ renderCastVideos(); }
   else if(id==="impostazioni"){ renderImpostazioni(); }
+  else if(id==="jukebox"){ if(!_jkbLoaded) jkbLoad(); else jkbRender(); }
   else { if(_calCdTimer){clearInterval(_calCdTimer);_calCdTimer=null;} renderShow(id); }
   updateBottomNav(id);
   // scroll to top on every navigation
@@ -5697,6 +5698,7 @@ function buildBottomNav(){
     {id:'pagamenti',    label:'Pagamenti',          color:'#34d399'},
     {id:'finanze',      label:'Cachet',             color:'#34d399'},
     {id:'staff',        label:'Staff',              color:'#34d399'},
+    {id:'jukebox',      label:'Jukebox',            color:'#a855f7'},
     {id:'impostazioni', label:'Impostazioni',       color:'#fbbf24'},
     {id:'membri',       label:'Membri',             color:'#a97dfa', adminOnly:true},
   ];
@@ -5750,7 +5752,7 @@ function buildBottomNav(){
   var ordered=[];
   ['calendar','miedate'].forEach(function(id){ if(map[id]) ordered.push(renderItem(map[id])); });
   grouped.forEach(function(group){ var markup=renderGroup(group); if(markup) ordered.push(markup); });
-  ['impostazioni','membri'].forEach(function(id){ if(map[id]) ordered.push(renderItem(map[id])); });
+  ['jukebox','impostazioni','membri'].forEach(function(id){ if(map[id]) ordered.push(renderItem(map[id])); });
   inner.innerHTML=ordered.join('');
   inner.querySelectorAll('[data-view]').forEach(function(btn){
     btn.addEventListener('click', function(e){
@@ -7852,6 +7854,11 @@ function _isLightColor(hex){
       <span class="nav-dot" style="background:#34d399"></span> Staff
     </div>
 
+    <div class="nav-group-label">Extra</div>
+    <div class="nav-item" data-show="jukebox" onclick="showView('jukebox')">
+      <span class="nav-dot" style="background:#a855f7"></span> Jukebox
+    </div>
+
     <div class="nav-group-label">Sistema</div>
     <div class="nav-item" data-show="impostazioni" onclick="showView('impostazioni')">
       <span class="nav-dot" style="background:#fbbf24"></span> Impostazioni
@@ -8100,6 +8107,41 @@ function _isLightColor(hex){
       </div>
     </div>
 
+    <!-- JUKEBOX VIEW -->
+    <div id="view-jukebox" class="view" style="--accent:#a855f7">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🎵 Jukebox</div>
+          <div class="page-sub">Richiedi un brano per il tuo bus</div>
+        </div>
+      </div>
+
+      <!-- ADMIN PANEL -->
+      <div id="jukebox-admin-panel" style="display:none; margin-bottom:1.4rem; background:var(--surface2); border:1px solid rgba(168,85,247,0.35); border-radius:14px; padding:1.1rem 1.3rem;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:0.6rem; letter-spacing:0.18em; text-transform:uppercase; color:#a855f7; margin-bottom:1rem;">⚙️ Pannello Admin — Jukebox</div>
+        <div style="margin-bottom:1.1rem;">
+          <div style="font-size:0.82rem; font-weight:700; color:var(--white); margin-bottom:0.6rem;">Rinomina bus e scegli colore</div>
+          <div id="jukebox-rename-rows" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+          <div style="display:flex; align-items:center; gap:0.8rem; margin-top:0.7rem; flex-wrap:wrap;">
+            <button onclick="jukeboxSaveNames()" style="background:#a855f7; border:none; border-radius:8px; color:#fff; font-family:'Outfit',sans-serif; font-size:0.85rem; font-weight:700; padding:0.45rem 1.1rem; cursor:pointer; transition:opacity 0.15s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Salva nomi e colori</button>
+            <span id="jukebox-names-saved" style="font-size:0.75rem; color:#a855f7; opacity:0; transition:opacity 0.4s;">✓ Salvato</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.82rem; font-weight:700; color:var(--white); margin-bottom:0.6rem;">Operatori attivi per bus</div>
+          <div id="jukebox-operators-rows" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+        </div>
+      </div>
+
+      <!-- TAB BUS -->
+      <div class="jkb-tabs-wrap">
+        <div class="cal-tabs jkb-tabs" id="jukebox-tabs"></div>
+      </div>
+
+      <!-- CONTENUTO TAB -->
+      <div id="jukebox-tab-content"></div>
+        </div>
+
   </div><!-- .content -->
   </div><!-- .layout -->
 
@@ -8124,6 +8166,7 @@ function _isLightColor(hex){
   .nav-item[data-show="staff"]{ --nav-accent:#34d399; }
   .nav-item[data-show="impostazioni"]{ --nav-accent:#fbbf24; }
   .nav-item[data-show="membri"]{ --nav-accent:#a97dfa; }
+  .nav-item[data-show="jukebox"]{ --nav-accent:#a855f7; }
 
   .nav-item{ border: 1px solid transparent; }
 
@@ -8368,7 +8411,457 @@ function _isLightColor(hex){
   font-family:'Outfit',sans-serif !important; font-size:0.95rem !important; font-weight:700;
   letter-spacing:0.01em !important; text-transform:none !important; color:var(--white) !important;
 }
+
+/* ══ JUKEBOX ══ */
+.jkb-tabs-wrap {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.2rem; padding-bottom: 2px;
+}
+.jkb-tabs { flex-wrap: nowrap; min-width: max-content; }
+.jkb-tab-btn {
+  white-space: nowrap; border: none; border-radius: 8px;
+  font-family: 'Outfit', sans-serif; font-size: 0.88rem; font-weight: 700;
+  padding: 0.5rem 1.1rem; cursor: pointer; transition: all 0.15s;
+  background: var(--surface2); color: var(--dimtext);
+}
+.jkb-tab-btn.active { color: #fff; }
+.jkb-section-heading {
+  font-size: 1.15rem; font-weight: 800; color: var(--white);
+  margin-bottom: 0.8rem; letter-spacing: -0.01em;
+}
+.jkb-section-heading span { margin-right: 0.4rem; }
+.jkb-operator-line {
+  font-size: 0.82rem; color: var(--dimtext); margin-bottom: 0.9rem;
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+}
+.jkb-operator-line strong { color: var(--white); font-weight: 700; }
+.jkb-form-block {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.1rem 1.2rem; margin-bottom: 1.2rem;
+}
+.jkb-playlist-block {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.1rem 1.2rem;
+}
+.jkb-input-row {
+  display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: flex-end;
+}
+.jkb-input-group {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  flex: 1; min-width: 130px;
+}
+.jkb-input-group label {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.52rem;
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--dimtext);
+}
+.jkb-input-group input {
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--white); font-family: 'Outfit', sans-serif;
+  font-size: 0.92rem; padding: 0.55rem 0.8rem; border-radius: 9px;
+  outline: none; transition: border-color 0.15s; width: 100%;
+}
+.jkb-add-btn {
+  border: none; border-radius: 9px; color: #fff;
+  font-family: 'Outfit', sans-serif; font-size: 0.92rem; font-weight: 700;
+  padding: 0.55rem 1.2rem; cursor: pointer; white-space: nowrap;
+  transition: opacity 0.15s; align-self: flex-end;
+}
+.jkb-add-btn:hover { opacity: 0.82; }
+.jkb-add-error { color: var(--red); font-size: 0.78rem; margin-top: 0.5rem; min-height: 1em; }
+.jkb-row {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.65rem 0.8rem; border-radius: 9px;
+  border: 1px solid var(--border); background: var(--surface3);
+  margin-bottom: 0.45rem; transition: background 0.15s;
+}
+.jkb-row:hover { background: var(--surface); }
+.jkb-row-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  color: var(--dimtext); min-width: 1.4rem; text-align: center; flex-shrink: 0;
+}
+.jkb-row-info { flex: 1; min-width: 0; }
+.jkb-row-title { font-weight: 700; font-size: 0.9rem; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jkb-row-artist { font-size: 0.78rem; color: var(--dimtext); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jkb-row-who { font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; color: var(--dimtext); flex-shrink: 0; text-align: right; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+.jkb-done-wrap { flex-shrink: 0; display: flex; align-items: center; }
+.jkb-done-wrap input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+.jkb-admin-rename-row {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+}
+.jkb-admin-rename-row label { font-size: 0.78rem; color: var(--dimtext); min-width: 60px; }
+.jkb-admin-rename-row input[type="text"] {
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--white); font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem; padding: 0.38rem 0.7rem; border-radius: 8px;
+  outline: none; width: 140px; transition: border-color 0.15s;
+}
+.jkb-admin-rename-row input[type="color"] {
+  width: 36px; height: 32px; border: 1px solid var(--border);
+  border-radius: 7px; background: var(--surface3); cursor: pointer; padding: 2px;
+}
+.jkb-op-row {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+}
+.jkb-op-row label { font-size: 0.78rem; color: var(--dimtext); min-width: 80px; }
+.jkb-op-row select {
+  background: var(--surface3); border: 1px solid var(--border2);
+  border-radius: 8px; color: var(--white); font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem; padding: 0.38rem 0.7rem; outline: none; min-width: 150px;
+}
+.jkb-op-saved { font-size: 0.72rem; opacity: 0; transition: opacity 0.4s; }
+@media (max-width: 760px) {
+  .jkb-input-row { flex-direction: column; }
+  .jkb-input-group { min-width: 0; width: 100%; }
+  .jkb-add-btn { width: 100%; text-align: center; margin-top: 0.2rem; }
+  .jkb-admin-rename-row input[type="text"] { width: 110px; }
+  .jkb-form-block, .jkb-playlist-block { padding: 0.9rem 0.9rem; }
+  .jkb-section-heading { font-size: 1rem; }
+  .jkb-played-block { margin-top: 0.9rem; }
+}
+.jkb-played-block {
+  margin-top: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.jkb-played-toggle {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.75rem 1rem; cursor: pointer;
+  background: var(--surface2); font-size: 0.85rem;
+  font-weight: 700; color: var(--dimtext);
+  transition: background 0.15s; user-select: none;
+}
+.jkb-played-toggle:hover { background: var(--surface3); color: var(--white); }
+.jkb-played-toggle-icon { font-size: 0.65rem; transition: transform 0.2s; }
+.jkb-played-count {
+  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem; font-weight: 700;
+  padding: 0.15rem 0.55rem; border-radius: 999px;
+}
+.jkb-played-body {
+  display: none; background: var(--surface);
+  padding: 0.5rem 0.8rem 0.6rem;
+}
+.jkb-played-body.open { display: block; }
+.jkb-row-done { opacity: 0.75; }
+.jkb-row-done:hover { opacity: 1; }
+
 </style>
+
+<script>
+/* ══════════════════════════════════════
+   JUKEBOX v2 — multi-bus con tab, colori e operatori per bus
+══════════════════════════════════════ */
+var JKB_DEFAULTS = [
+  { id: 'melobus',  name: 'MeloBus',  color: '#a855f7' },
+  { id: 'blackbus', name: 'BlackBus', color: '#e8394a' },
+  { id: 'fabiobus', name: 'FabioBus', color: '#4ec9f0' }
+];
+var _jkbConfig   = null;   // { buses:[{id,name,color}], operators:{busId:username} }
+var _jkbQueues   = {};     // { busId: [{id,title,artist,requestedBy,ts}] }
+var _jkbDone     = {};     // { busId: [{id,title,artist,requestedBy,ts,doneBy,doneAt}] }
+var _jkbActiveBus = JKB_DEFAULTS[0].id;
+var _jkbLoaded   = false;
+
+var JKB_CONFIG_KEY = 'jukebox_config_v2';
+function jkbQueueKey(busId){ return 'jukebox_queue_' + busId + '_v2'; }
+function jkbDoneKey(busId){  return 'jukebox_done_'  + busId + '_v2'; }
+
+function jkbEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function hexToRgb(hex){
+  var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return r+','+g+','+b;
+}
+
+/* ── Load ── */
+async function jkbLoad(){
+  try {
+    var sb = getSB();
+    var ids = JKB_DEFAULTS.map(function(b){ return b.id; });
+    var keys = [JKB_CONFIG_KEY].concat(ids.map(jkbQueueKey)).concat(ids.map(jkbDoneKey));
+    var r = await sb.from('ms_state').select('key,value').in('key', keys);
+    if(r.data){
+      r.data.forEach(function(row){
+        if(row.key === JKB_CONFIG_KEY){
+          try{ _jkbConfig = JSON.parse(row.value); }catch(e){}
+        } else {
+          ids.forEach(function(id){
+            if(row.key === jkbQueueKey(id)){
+              try{ _jkbQueues[id] = JSON.parse(row.value); }catch(e){}
+            }
+            if(row.key === jkbDoneKey(id)){
+              try{ _jkbDone[id] = JSON.parse(row.value); }catch(e){}
+            }
+          });
+        }
+      });
+    }
+  } catch(e){ console.error('jkbLoad error', e); }
+  if(!_jkbConfig) _jkbConfig = { buses: JSON.parse(JSON.stringify(JKB_DEFAULTS)), operators: {} };
+  if(!_jkbConfig.buses) _jkbConfig.buses = JSON.parse(JSON.stringify(JKB_DEFAULTS));
+  if(!_jkbConfig.operators) _jkbConfig.operators = {};
+  _jkbConfig.buses.forEach(function(b){ if(!_jkbQueues[b.id]) _jkbQueues[b.id] = []; if(!_jkbDone[b.id]) _jkbDone[b.id] = []; });
+  _jkbLoaded = true;
+  jkbRender();
+}
+
+/* ── Save helpers ── */
+async function jkbSaveConfig(){
+  try{
+    var sb=getSB();
+    await sb.from('ms_state').upsert({key:JKB_CONFIG_KEY,value:JSON.stringify(_jkbConfig),updated_at:new Date().toISOString()},{onConflict:'key'});
+  }catch(e){ console.error('jkbSaveConfig',e); }
+}
+async function jkbSaveQueue(busId){
+  try{
+    var sb=getSB();
+    await sb.from('ms_state').upsert({key:jkbQueueKey(busId),value:JSON.stringify(_jkbQueues[busId]||[]),updated_at:new Date().toISOString()},{onConflict:'key'});
+  }catch(e){ console.error('jkbSaveQueue',e); }
+}
+async function jkbSaveDone(busId){
+  try{
+    var sb=getSB();
+    await sb.from('ms_state').upsert({key:jkbDoneKey(busId),value:JSON.stringify(_jkbDone[busId]||[]),updated_at:new Date().toISOString()},{onConflict:'key'});
+  }catch(e){ console.error('jkbSaveDone',e); }
+}
+
+/* ── Tab switch ── */
+function jkbSwitchTab(busId){
+  _jkbActiveBus = busId;
+  jkbRenderTabs();
+  jkbRenderContent();
+}
+
+/* ── Add song ── */
+async function jkbAddSong(){
+  var bus = _jkbActiveBus;
+  var titleEl = document.getElementById('jkb-title-' + bus);
+  var artistEl = document.getElementById('jkb-artist-' + bus);
+  var errEl = document.getElementById('jkb-err-' + bus);
+  var title = (titleEl ? titleEl.value : '').trim();
+  var artist = (artistEl ? artistEl.value : '').trim();
+  if(!title){ if(errEl) errEl.textContent = 'Inserisci almeno il titolo.'; if(titleEl) titleEl.focus(); return; }
+  if(errEl) errEl.textContent = '';
+  if(!_jkbQueues[bus]) _jkbQueues[bus] = [];
+  _jkbQueues[bus].push({
+    id: Date.now()+'_'+Math.random().toString(36).slice(2,6),
+    title: title, artist: artist,
+    requestedBy: currentUser ? currentUser.username : 'Anonimo',
+    ts: new Date().toISOString()
+  });
+  await jkbSaveQueue(bus);
+  if(titleEl) titleEl.value = '';
+  if(artistEl) artistEl.value = '';
+  if(titleEl) titleEl.focus();
+  jkbRenderContent();
+}
+
+/* ── Mark done ── */
+async function jkbMarkDone(busId, songId){
+  if(!_jkbQueues[busId]) return;
+  var song = _jkbQueues[busId].find(function(s){ return s.id === songId; });
+  _jkbQueues[busId] = _jkbQueues[busId].filter(function(s){ return s.id !== songId; });
+  if(song){
+    if(!_jkbDone[busId]) _jkbDone[busId] = [];
+    _jkbDone[busId].push(Object.assign({}, song, {
+      doneBy: currentUser ? currentUser.username : '?',
+      doneAt: new Date().toISOString()
+    }));
+    await jkbSaveDone(busId);
+  }
+  await jkbSaveQueue(busId);
+  jkbRenderContent();
+}
+
+/* ── Admin: save names/colors ── */
+async function jukeboxSaveNames(){
+  _jkbConfig.buses.forEach(function(b){
+    var ni = document.getElementById('jkb-rename-name-' + b.id);
+    var ci = document.getElementById('jkb-rename-color-' + b.id);
+    if(ni && ni.value.trim()) b.name = ni.value.trim();
+    if(ci) b.color = ci.value;
+    if(!_jkbQueues[b.id]) _jkbQueues[b.id] = [];
+  });
+  await jkbSaveConfig();
+  var el = document.getElementById('jukebox-names-saved');
+  if(el){ el.style.opacity='1'; setTimeout(function(){ el.style.opacity='0'; }, 1800); }
+  jkbRender();
+}
+
+/* ── Admin: set operator ── */
+async function jkbSetOperator(busId, username){
+  _jkbConfig.operators[busId] = username;
+  await jkbSaveConfig();
+  var el = document.getElementById('jkb-op-saved-' + busId);
+  if(el){ el.style.opacity='1'; setTimeout(function(){ el.style.opacity='0'; }, 1600); }
+  jkbRenderContent();
+}
+
+/* ── Render all ── */
+function jkbRender(){
+  jkbRenderAdminPanel();
+  jkbRenderTabs();
+  jkbRenderContent();
+}
+
+function jkbRenderTabs(){
+  var tabsEl = document.getElementById('jukebox-tabs');
+  if(!tabsEl) return;
+  tabsEl.innerHTML = _jkbConfig.buses.map(function(b){
+    var active = b.id === _jkbActiveBus;
+    var bg = active ? b.color : '';
+    var style = active
+      ? 'background:'+b.color+';color:#fff;box-shadow:0 0 0 2px '+b.color+';'
+      : 'background:var(--surface2);color:var(--dimtext);';
+    return '<button class="cal-tab jkb-tab-btn'+(active?' active':'')
+      +'" style="'+style+'" onclick="jkbSwitchTab(\''+b.id+'\')">'+jkbEsc(b.name)+'</button>';
+  }).join('');
+}
+
+function jkbRenderContent(){
+  var el = document.getElementById('jukebox-tab-content');
+  if(!el) return;
+  var bus = _jkbConfig.buses.find(function(b){ return b.id === _jkbActiveBus; });
+  if(!bus) return;
+  var color = bus.color;
+  var rgb = hexToRgb(color);
+  var queue = _jkbQueues[bus.id] || [];
+  var operator = _jkbConfig.operators[bus.id] || '';
+  var isOperator = currentUser && operator && currentUser.username === operator;
+  var canCheck = isOperator || isTrueAdmin();
+
+  /* Operator line */
+  var opLine = operator
+    ? '<div class="jkb-operator-line">🎛️ Al mixer: <strong>'+jkbEsc(operator)+'</strong></div>'
+    : '<div class="jkb-operator-line" style="color:var(--dimtext);">Nessun operatore attivo</div>';
+
+  /* Form */
+  var formHtml = '<div class="jkb-form-block" style="border-color:rgba('+rgb+',0.3);">'
+    + '<div class="jkb-section-heading"><span>🎤</span>Richiedi un brano</div>'
+    + '<div class="jkb-input-row">'
+    + '<div class="jkb-input-group"><label>Titolo</label>'
+    + '<input id="jkb-title-'+bus.id+'" type="text" placeholder="Nome della canzone…" maxlength="80"'
+    + ' onfocus="this.style.borderColor=\''+color+'\'" onblur="this.style.borderColor=\'\'"'
+    + ' onkeydown="if(event.key===\'Enter\')jkbAddSong()"></div>'
+    + '<div class="jkb-input-group"><label>Artista / Interprete</label>'
+    + '<input id="jkb-artist-'+bus.id+'" type="text" placeholder="Nome dell\'artista…" maxlength="60"'
+    + ' onfocus="this.style.borderColor=\''+color+'\'" onblur="this.style.borderColor=\'\'"'
+    + ' onkeydown="if(event.key===\'Enter\')jkbAddSong()"></div>'
+    + '<button class="jkb-add-btn" style="background:'+color+';" onclick="jkbAddSong()">+ Aggiungi</button>'
+    + '</div>'
+    + '<div class="jkb-add-error" id="jkb-err-'+bus.id+'"></div>'
+    + '</div>';
+
+  /* Playlist */
+  var listHtml;
+  if(queue.length === 0){
+    listHtml = '<div style="color:var(--dimtext);font-size:0.85rem;text-align:center;padding:2rem 0;">Nessuna canzone in lista. Sii il primo! 🎶</div>';
+  } else {
+    listHtml = queue.map(function(s, i){
+      var checkHtml = canCheck
+        ? '<span class="jkb-done-wrap"><input type="checkbox" style="accent-color:'+color+';" title="Segna come eseguita" onchange="jkbMarkDone(\''+bus.id+'\',\''+s.id+'\')"></span>'
+        : '';
+      return '<div class="jkb-row">'
+        + '<span class="jkb-row-num">'+(i+1)+'</span>'
+        + '<span class="jkb-row-info">'
+        + '<div class="jkb-row-title">'+jkbEsc(s.title)+'</div>'
+        + (s.artist ? '<div class="jkb-row-artist">'+jkbEsc(s.artist)+'</div>' : '')
+        + '</span>'
+        + '<span class="jkb-row-who">'+jkbEsc(s.requestedBy||'')+'</span>'
+        + checkHtml
+        + '</div>';
+    }).join('');
+  }
+
+  var playlistHtml = '<div class="jkb-playlist-block" style="border-color:rgba('+rgb+',0.3);">'
+    + '<div class="jkb-section-heading"><span>📋</span>Playlist</div>'
+    + opLine
+    + listHtml
+    + '</div>';
+
+  /* Played / archivio */
+  var done = _jkbDone[bus.id] || [];
+  var playedHtml = '';
+  if(done.length > 0){
+    var doneRows = done.slice().reverse().map(function(s, i){
+      return '<div class="jkb-row jkb-row-done">'
+        + '<span class="jkb-row-num" style="color:var(--green);">✓</span>'
+        + '<span class="jkb-row-info">'
+        + '<div class="jkb-row-title" style="opacity:0.6;text-decoration:line-through;">'+jkbEsc(s.title)+'</div>'
+        + (s.artist ? '<div class="jkb-row-artist" style="opacity:0.5;">'+jkbEsc(s.artist)+'</div>' : '')
+        + '</span>'
+        + '<span class="jkb-row-who" style="text-align:right;">'
+        + '<span style="display:block;">'+jkbEsc(s.requestedBy||'')+'</span>'
+        + '<span style="font-size:0.5rem;color:var(--green);opacity:0.7;">✓ '+jkbEsc(s.doneBy||'')+'</span>'
+        + '</span>'
+        + '</div>';
+    }).join('');
+
+    playedHtml = '<div class="jkb-played-block" id="jkb-played-block-'+bus.id+'">'
+      + '<div class="jkb-played-toggle" onclick="jkbTogglePlayed(\'' + bus.id + '\')">'
+      + '<span class="jkb-played-toggle-icon" id="jkb-played-icon-'+bus.id+'">▶</span>'
+      + '<span>Già eseguiti</span>'
+      + '<span class="jkb-played-count" style="background:rgba('+rgb+',0.18);color:'+color+';">'+done.length+'</span>'
+      + '</div>'
+      + '<div class="jkb-played-body" id="jkb-played-body-'+bus.id+'">'
+      + doneRows
+      + '</div>'
+      + '</div>';
+  }
+
+  el.innerHTML = formHtml + playlistHtml + playedHtml;
+}
+
+function jkbTogglePlayed(busId){
+  var body = document.getElementById('jkb-played-body-'+busId);
+  var icon = document.getElementById('jkb-played-icon-'+busId);
+  if(!body) return;
+  var open = body.classList.toggle('open');
+  if(icon) icon.textContent = open ? '▼' : '▶';
+}
+
+function jkbRenderAdminPanel(){
+  var panel = document.getElementById('jukebox-admin-panel');
+  if(!panel) return;
+  panel.style.display = isTrueAdmin() ? '' : 'none';
+  if(!isTrueAdmin()) return;
+
+  /* Rename rows */
+  var renameEl = document.getElementById('jukebox-rename-rows');
+  if(renameEl){
+    renameEl.innerHTML = _jkbConfig.buses.map(function(b){
+      return '<div class="jkb-admin-rename-row">'
+        + '<label>'+jkbEsc(b.name)+'</label>'
+        + '<input id="jkb-rename-name-'+b.id+'" type="text" value="'+jkbEsc(b.name)+'" placeholder="Nome bus…">'
+        + '<input id="jkb-rename-color-'+b.id+'" type="color" value="'+jkbEsc(b.color)+'" title="Scegli colore">'
+        + '</div>';
+    }).join('');
+  }
+
+  /* Operator rows */
+  var opRowsEl = document.getElementById('jukebox-operators-rows');
+  if(opRowsEl){
+    var users = (state && state.users) ? state.users : [];
+    opRowsEl.innerHTML = _jkbConfig.buses.map(function(b){
+      var optsHtml = '<option value="">— Nessuno —</option>'
+        + users.filter(function(u){ return u.username; }).map(function(u){
+          var sel = (_jkbConfig.operators[b.id] === u.username) ? ' selected' : '';
+          return '<option value="'+jkbEsc(u.username)+'"'+sel+'>'
+            + jkbEsc(u.username) + (u.displayName ? ' ('+jkbEsc(u.displayName)+')' : '') + '</option>';
+        }).join('');
+      return '<div class="jkb-op-row">'
+        + '<label style="color:'+jkbEsc(b.color)+'; font-weight:700;">'+jkbEsc(b.name)+'</label>'
+        + '<select onchange="jkbSetOperator(\''+b.id+'\',this.value)">'+optsHtml+'</select>'
+        + '<span class="jkb-op-saved" id="jkb-op-saved-'+b.id+'" style="color:'+jkbEsc(b.color)+';">✓</span>'
+        + '</div>';
+    }).join('');
+  }
+}
+
+/* jukebox showView hook rimosso — gestito direttamente in showView */
+
+</script>
 
 </body>
 </html>
