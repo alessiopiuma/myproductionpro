@@ -2375,7 +2375,7 @@ async function loadFromCloud(){
   var ok=false;
   try{
     var cs=await sbGet('main_state');
-    if(cs){ state=cs; localStorage.setItem('msrls_v5',JSON.stringify(state)); ok=true; }
+    if(cs){ state=cs; ok=true; }
     var cu=await sbGetUsers();
     var mapped=(cu||[]).map(function(u){
       return {id:u.id,nome:u.nome,username:u.username,
@@ -2485,16 +2485,9 @@ let state = { date:{}, cast:{}, location:{}, presenze:{}, staffLists:{}, userAva
 Object.keys(SHOWS).forEach(k=>{ state.date[k]=[]; state.cast[k]=[]; });
   if(!state.deletedIds) state.deletedIds=[];
 
-function save(opts){ localStorage.setItem("msrls_v5",JSON.stringify(state)); if(!(opts&&opts.noSync)) scheduleSync(); }
+function save(opts){ if(!(opts&&opts.noSync)) scheduleSync(); }
 function load(){
-  try{
-    // try v5 first
-    let d = localStorage.getItem("msrls_v5");
-    // migrate from older keys
-    if(!d) d = localStorage.getItem("musicalSrls_v4");
-    if(!d) d = localStorage.getItem("musicalSrls_v3");
-    if(d){ const p=JSON.parse(d); Object.assign(state,p); }
-  }catch(e){}
+  // Dati sempre e solo da Supabase — localStorage non viene letto per lo state
   Object.keys(SHOWS).forEach(k=>{ if(!state.date[k])state.date[k]=[]; if(!state.cast[k])state.cast[k]=[]; });
   if(!state.location)state.location={};
   if(!state.presenze)state.presenze={};
@@ -3251,8 +3244,7 @@ function eliminaData(showId, dateId){
     // Permanently record this deletion so seedDates never re-adds it from any device
     if(!state.deletedIds) state.deletedIds=[];
     if(state.deletedIds.indexOf(dateId)===-1) state.deletedIds.push(dateId);
-    localStorage.setItem('msrls_v5', JSON.stringify(state));
-    scheduleSync(true);
+      scheduleSync(true);
     toast("Data eliminata"); renderShow(showId); updateHeaderStats();
     if(typeof renderCalendar==='function') renderCalendar();
     if(typeof renderCalList==='function') renderCalList();
@@ -3271,7 +3263,6 @@ function aggiungiReplica(showId, primaryId, dataStr){
   // Sort all entries of this day chronologically
   state.date[showId].sort(function(a,b){ return a.data.localeCompare(b.data)||(a.ora||'').localeCompare(b.ora||''); });
   if(inp) inp.value='';
-  localStorage.setItem('msrls_v5', JSON.stringify(state));
   scheduleSync(true);
   toast('Orario aggiunto'); renderShow(showId); updateHeaderStats();
   // re-open the detail panel
@@ -3286,8 +3277,7 @@ function rimuoviReplica(showId, dateId){
     delete state.presenze[dateId]; delete state.location[dateId];
     if(!state.deletedIds) state.deletedIds=[];
     if(state.deletedIds.indexOf(dateId)===-1) state.deletedIds.push(dateId);
-    localStorage.setItem('msrls_v5', JSON.stringify(state));
-    scheduleSync(true);
+      scheduleSync(true);
     toast('Orario rimosso'); renderShow(showId); updateHeaderStats();
   });
 }
@@ -3299,7 +3289,6 @@ function aggiornaOraReplica(showId, dateId, newOra){
   // Re-sort chronologically
   state.date[showId].sort(function(a,b){ return a.data.localeCompare(b.data)||(a.ora||'').localeCompare(b.ora||''); });
   // Sync immediato per evitare sovrascrittura dal cloud
-  localStorage.setItem('msrls_v5', JSON.stringify(state));
   scheduleSync(true);
   toast('Orario aggiornato'); renderShow(showId);
 }
@@ -4231,7 +4220,6 @@ async function refreshAppData(btn){
         currentUser = users.find(function(u){ return String(u.id)===String(currentUser.id) || String((u.username||'')).toLowerCase()===String((currentUser.username||'')).toLowerCase(); }) || currentUser;
       }
     }catch(e){}
-    save({noSync:true});
     if(currentUser){
       applySession();
       showView(activeId);
@@ -6835,25 +6823,22 @@ window.addEventListener('DOMContentLoaded', function(){
     if(sp){ var pel=document.getElementById('loginPass'); if(pel) pel.value=sp; }
   }catch(e){}
   _suspendSync = true;
+  // Inizializza struttura state vuota (nessun localStorage)
   try {
     load();
     ensureDefaultAdmin();
     seedDates();
-    save({noSync:true});
   } catch(e){ console.warn('Init error:', e); }
   buildBottomNav();
-  // Load from Supabase in background before enabling sync
+  // Carica SEMPRE e SOLO da Supabase
   loadFromCloud().then(function(){
     _cloudLoaded=true;
     ensureDefaultAdmin();
     seedDates();
     _suspendSync = false;
-    // Solo aggiorna localStorage, NON sincronizza su cloud (evita sovrascrittura di modifiche in volo)
-    localStorage.setItem('msrls_v5', JSON.stringify(state));
   }).catch(function(){
     _cloudLoaded=true;
     _suspendSync = false;
-    localStorage.setItem('msrls_v5', JSON.stringify(state));
   });
 });
 </script>
@@ -8731,10 +8716,43 @@ function jkbRenderContent(){
   var isOperator = currentUser && operator && currentUser.username === operator;
   var canCheck = isOperator || isTrueAdmin();
 
-  /* Operator line */
-  var opLine = operator
-    ? '<div class="jkb-operator-line">🎛️ Al mixer: <strong>'+jkbEsc(operator)+'</strong></div>'
-    : '<div class="jkb-operator-line" style="color:var(--dimtext);">Nessun operatore attivo</div>';
+  /* Helper: trova utente per username */
+  function findUser(username){
+    var all = (typeof loadUsers === 'function' ? loadUsers() : null) || [];
+    return all.find(function(u){ return u.username === username; }) || null;
+  }
+
+  /* Helper: genera HTML avatar inline (img o iniziali) */
+  function avatarHtml(user, size){
+    size = size || 28;
+    if(!user) return '<span style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:var(--surface3);display:inline-flex;align-items:center;justify-content:center;font-size:'+(size*0.38)+'px;font-weight:700;color:var(--dimtext);flex-shrink:0;">?</span>';
+    var av = getUserAvatar(user);
+    var role = (user.role||'guest').replace('user','dancer').replace('semi-admin','choreographer');
+    var initials = getAvatarInitials(user);
+    var base = 'width:'+size+'px;height:'+size+'px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;';
+    if(av){
+      return '<span style="'+base+'background:#0f172a;border:1px solid rgba(255,255,255,0.15)"><img src="'+av+'" style="width:100%;height:100%;object-fit:cover;" alt=""></span>';
+    }
+    var colors = {admin:'rgba(232,0,13,0.18)',choreographer:'rgba(249,115,22,0.18)',performer:'rgba(78,201,240,0.18)',dancer:'rgba(14,165,233,0.18)',staff:'rgba(52,211,153,0.18)',guitarist:'rgba(139,92,246,0.18)',guest:'rgba(107,114,128,0.18)'};
+    var borders = {admin:'#e8000d',choreographer:'#f97316',performer:'#4ec9f0',dancer:'#0ea5e9',staff:'#34d399',guitarist:'#8b5cf6',guest:'#6b7280'};
+    var bg = colors[role]||colors.guest, border = borders[role]||borders.guest;
+    return '<span style="'+base+'background:'+bg+';border:1px solid '+border+';color:'+border+';font-size:'+(size*0.38)+'px;">'+jkbEsc(initials)+'</span>';
+  }
+
+  /* Operatore — molto visibile */
+  var opUser = operator ? findUser(operator) : null;
+  var opName = opUser ? (opUser.nome || opUser.username) : operator;
+  var opLine;
+  if(operator){
+    opLine = '<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;padding:0.65rem 0.9rem;background:rgba('+rgb+',0.1);border:1px solid rgba('+rgb+',0.3);border-radius:10px;">'
+      + avatarHtml(opUser, 34)
+      + '<div>'
+      + '<div style="font-size:0.62rem;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.12em;text-transform:uppercase;color:rgba('+rgb+',0.8);margin-bottom:1px;">🎛️ Al mixer</div>'
+      + '<div style="font-size:1rem;font-weight:800;color:var(--white);">'+jkbEsc(opName)+'</div>'
+      + '</div></div>';
+  } else {
+    opLine = '<div style="font-size:0.8rem;color:var(--dimtext);margin-bottom:1rem;padding:0.5rem 0;">Nessun operatore attivo</div>';
+  }
 
   /* Form */
   var formHtml = '<div class="jkb-form-block" style="border-color:rgba('+rgb+',0.3);">'
@@ -8759,16 +8777,34 @@ function jkbRenderContent(){
     listHtml = '<div style="color:var(--dimtext);font-size:0.85rem;text-align:center;padding:2rem 0;">Nessuna canzone in lista. Sii il primo! 🎶</div>';
   } else {
     listHtml = queue.map(function(s, i){
+      var reqUser = findUser(s.requestedBy);
+      var reqName = reqUser ? (reqUser.nome || reqUser.username) : (s.requestedBy || '');
+      var reqAvatar = avatarHtml(reqUser, 30);
+
+      /* Tasto copia per operatore/admin */
+      var copyHtml = canCheck
+        ? '<button onclick="jkbCopyForMixer(\''+jkbEsc(s.artist)+'\',\''+jkbEsc(s.title)+'\')" '
+          + 'title="Copia per il mixer" '
+          + 'style="flex-shrink:0;background:rgba('+rgb+',0.15);border:1px solid rgba('+rgb+',0.3);border-radius:7px;color:'+color+';font-size:0.75rem;font-weight:700;padding:0.3rem 0.55rem;cursor:pointer;white-space:nowrap;transition:background 0.15s;" '
+          + 'onmouseover="this.style.background=\'rgba('+rgb+',0.3)\'" onmouseout="this.style.background=\'rgba('+rgb+',0.15)\'">'
+          + '📋</button>'
+        : '';
+
       var checkHtml = canCheck
         ? '<span class="jkb-done-wrap"><input type="checkbox" style="accent-color:'+color+';" title="Segna come eseguita" onchange="jkbMarkDone(\''+bus.id+'\',\''+s.id+'\')"></span>'
         : '';
-      return '<div class="jkb-row">'
+
+      return '<div class="jkb-row" style="align-items:center;">'
         + '<span class="jkb-row-num">'+(i+1)+'</span>'
         + '<span class="jkb-row-info">'
         + '<div class="jkb-row-title">'+jkbEsc(s.title)+'</div>'
         + (s.artist ? '<div class="jkb-row-artist">'+jkbEsc(s.artist)+'</div>' : '')
         + '</span>'
-        + '<span class="jkb-row-who">'+jkbEsc(s.requestedBy||'')+'</span>'
+        + '<span style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0;max-width:110px;">'
+        + reqAvatar
+        + '<span style="font-size:0.78rem;font-weight:600;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+jkbEsc(reqName)+'</span>'
+        + '</span>'
+        + copyHtml
         + checkHtml
         + '</div>';
     }).join('');
@@ -8784,22 +8820,24 @@ function jkbRenderContent(){
   var done = _jkbDone[bus.id] || [];
   var playedHtml = '';
   if(done.length > 0){
-    var doneRows = done.slice().reverse().map(function(s, i){
+    var doneRows = done.slice().reverse().map(function(s){
+      var reqUser = findUser(s.requestedBy);
+      var reqName = reqUser ? (reqUser.nome || reqUser.username) : (s.requestedBy || '');
       return '<div class="jkb-row jkb-row-done">'
         + '<span class="jkb-row-num" style="color:var(--green);">✓</span>'
         + '<span class="jkb-row-info">'
         + '<div class="jkb-row-title" style="opacity:0.6;text-decoration:line-through;">'+jkbEsc(s.title)+'</div>'
         + (s.artist ? '<div class="jkb-row-artist" style="opacity:0.5;">'+jkbEsc(s.artist)+'</div>' : '')
         + '</span>'
-        + '<span class="jkb-row-who" style="text-align:right;">'
-        + '<span style="display:block;">'+jkbEsc(s.requestedBy||'')+'</span>'
-        + '<span style="font-size:0.5rem;color:var(--green);opacity:0.7;">✓ '+jkbEsc(s.doneBy||'')+'</span>'
+        + '<span style="text-align:right;flex-shrink:0;font-size:0.72rem;color:var(--dimtext);">'
+        + '<span style="display:block;">'+jkbEsc(reqName)+'</span>'
+        + '<span style="color:var(--green);font-size:0.62rem;">✓ '+jkbEsc(s.doneBy||'')+'</span>'
         + '</span>'
         + '</div>';
     }).join('');
 
     playedHtml = '<div class="jkb-played-block" id="jkb-played-block-'+bus.id+'">'
-      + '<div class="jkb-played-toggle" onclick="jkbTogglePlayed(\'' + bus.id + '\')">'
+      + '<div class="jkb-played-toggle" onclick="jkbTogglePlayed(\''+bus.id+'\')">'
       + '<span class="jkb-played-toggle-icon" id="jkb-played-icon-'+bus.id+'">▶</span>'
       + '<span>Già eseguiti</span>'
       + '<span class="jkb-played-count" style="background:rgba('+rgb+',0.18);color:'+color+';">'+done.length+'</span>'
@@ -8813,6 +8851,34 @@ function jkbRenderContent(){
   el.innerHTML = formHtml + playlistHtml + playedHtml;
 }
 
+function jkbCopyForMixer(artist, title){
+  var text = (artist && title) ? artist + ' ' + title : (title || artist || '');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      jkbShowCopyToast(text);
+    }).catch(function(){
+      jkbFallbackCopy(text);
+    });
+  } else {
+    jkbFallbackCopy(text);
+  }
+}
+function jkbFallbackCopy(text){
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); jkbShowCopyToast(text); }catch(e){}
+  document.body.removeChild(ta);
+}
+function jkbShowCopyToast(text){
+  if(typeof toast === 'function'){ toast('📋 Copiato: ' + text); return; }
+  var t = document.createElement('div');
+  t.textContent = '📋 Copiato: ' + text;
+  t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e1e2e;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:0.6rem 1.1rem;border-radius:8px;font-size:0.85rem;z-index:9999;pointer-events:none;';
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2000);
+}
+
 function jkbTogglePlayed(busId){
   var body = document.getElementById('jkb-played-body-'+busId);
   var icon = document.getElementById('jkb-played-icon-'+busId);
@@ -8820,6 +8886,7 @@ function jkbTogglePlayed(busId){
   var open = body.classList.toggle('open');
   if(icon) icon.textContent = open ? '▼' : '▶';
 }
+
 
 function jkbRenderAdminPanel(){
   var panel = document.getElementById('jukebox-admin-panel');
@@ -8842,17 +8909,20 @@ function jkbRenderAdminPanel(){
   /* Operator rows */
   var opRowsEl = document.getElementById('jukebox-operators-rows');
   if(opRowsEl){
-    var users = (state && state.users) ? state.users : [];
+    var allUsers = (typeof loadUsers === 'function' ? loadUsers() : null) || [];
+    allUsers = allUsers
+      .filter(function(u){ return u.username; })
+      .sort(function(a,b){ return (a.username||'').localeCompare(b.username||'','it',{sensitivity:'base'}); });
     opRowsEl.innerHTML = _jkbConfig.buses.map(function(b){
       var optsHtml = '<option value="">— Nessuno —</option>'
-        + users.filter(function(u){ return u.username; }).map(function(u){
+        + allUsers.map(function(u){
           var sel = (_jkbConfig.operators[b.id] === u.username) ? ' selected' : '';
-          return '<option value="'+jkbEsc(u.username)+'"'+sel+'>'
-            + jkbEsc(u.username) + (u.displayName ? ' ('+jkbEsc(u.displayName)+')' : '') + '</option>';
+          var label = jkbEsc(u.username) + (u.nome ? ' — '+jkbEsc(u.nome) : '');
+          return '<option value="'+jkbEsc(u.username)+'"'+sel+'>'+label+'</option>';
         }).join('');
       return '<div class="jkb-op-row">'
         + '<label style="color:'+jkbEsc(b.color)+'; font-weight:700;">'+jkbEsc(b.name)+'</label>'
-        + '<select onchange="jkbSetOperator(\''+b.id+'\',this.value)">'+optsHtml+'</select>'
+        + '<select onchange="jkbSetOperator(\'' + b.id + '\',this.value)">'+optsHtml+'</select>'
         + '<span class="jkb-op-saved" id="jkb-op-saved-'+b.id+'" style="color:'+jkbEsc(b.color)+';">✓</span>'
         + '</div>';
     }).join('');
